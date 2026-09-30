@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { BufferAttribute, SRGBColorSpace, TextureLoader, Vector3, type BufferGeometry, type Material, type MeshStandardMaterial, type Texture } from 'three'
+import { BufferAttribute, NoColorSpace, SRGBColorSpace, TextureLoader, Vector3, type BufferGeometry, type Material, type MeshStandardMaterial, type Texture } from 'three'
 
 /** Sol de fim de tarde vindo da frente e da direita (entra pelos janelões). O mesmo no site e no Blender. */
 export const SOL_CASA = new Vector3(0.5, 0.6, 0.62).normalize()
@@ -10,19 +10,25 @@ export const SOL_CASA = new Vector3(0.5, 0.6, 0.62).normalize()
 
 interface InfoLuz {
   versao: number
-  andares: Record<string, { imagem: string; escala: number }>
+  andares: Record<string, { imagem: string; escala: number; oclusao?: string }>
   pecas: { nome: string; count: number; offset: number }[]
 }
 export interface LuzAssada {
-  mapas: Record<string, { textura: Texture; intensidade: number }>
+  mapas: Record<string, { textura: Texture; intensidade: number; oclusao?: Texture }>
   /** coordenadas no mapa de luz de cada peça ("terreo/parede", "superior/tapete2"…) */
   uv: Map<string, Uint16Array>
 }
 
-/** Brilho geral da luz assada (1 = igual ao Blender) */
-const EXPOSICAO = 3.4
-/** Luz mínima em qualquer canto (pra nada ficar preto) */
-const LUZ_MINIMA = 0.42
+// Dentro de casa é sempre "dia claro": uma luz branca forte e por igual em tudo (não precisa ser real,
+// tem que ser claro). A luz calculada no Blender entra só por cima, de tempero: o sol no chão, o abajur aceso.
+/** Luz de dia em qualquer lugar de dentro da casa (paredes, chão, teto) */
+const DIA = 2.3
+/** Quanto da luz calculada no Blender soma por cima (sol entrando, abajures) */
+const TEMPERO = 0.3
+/** Luz de dia a mais nos móveis/objetos que não têm luz calculada (plantas, livros, brinquedos…) */
+const DIA_OBJETOS = 1.5
+/** Brilho da luz calculada (1 = igual ao Blender) */
+const EXPOSICAO = 1
 
 let promessa: Promise<LuzAssada | null> | null = null
 function carregar() {
@@ -43,7 +49,14 @@ function carregar() {
         t.colorSpace = SRGBColorSpace
         t.channel = 1
         t.anisotropy = 4
-        mapas[andar] = { textura: t, intensidade: a.escala * Math.PI * EXPOSICAO }
+        // sombrinha suave nos cantos e embaixo dos móveis (dá noção de espaço sem escurecer a casa)
+        let oclusao: Texture | undefined
+        if (a.oclusao) {
+          oclusao = await loader.loadAsync(`${base}luz/${a.oclusao}?v=${info.versao}`)
+          oclusao.colorSpace = NoColorSpace
+          oclusao.channel = 1
+        }
+        mapas[andar] = { textura: t, intensidade: a.escala * Math.PI * EXPOSICAO, oclusao }
       }
       return { mapas, uv }
     } catch {
@@ -82,14 +95,18 @@ export function comLuz(geo: BufferGeometry, uv: Uint16Array | undefined): Buffer
 }
 
 /**
- * O material passa a usar só a luz assada pra parte "difusa" (sem somar de novo o sol, o céu e as lâmpadas,
- * que já estão dentro do mapa). O brilho do sol e os reflexos continuam de verdade.
+ * Paredes, chão, teto e móveis com luz calculada: luz de dia forte e por igual + um pouco da luz do Blender
+ * por cima (sol e abajures). Os cantinhos e o que encosta ganham sombra suave pelo mapa de oclusão (se existir).
  */
-export function usarLuz(m: Material, mapa: { textura: Texture; intensidade: number }) {
+export function usarLuz(m: Material, mapa: { textura: Texture; intensidade: number; oclusao?: Texture }) {
   const s = m as MeshStandardMaterial
   if (!('lightMap' in s)) return
   s.lightMap = mapa.textura
   s.lightMapIntensity = mapa.intensidade
+  if (mapa.oclusao) {
+    s.aoMap = mapa.oclusao
+    s.aoMapIntensity = 1
+  }
   s.onBeforeCompile = (sh) => {
     sh.fragmentShader = sh.fragmentShader.replace(
       '#include <lights_fragment_maps>',
@@ -97,14 +114,27 @@ export function usarLuz(m: Material, mapa: { textura: Texture; intensidade: numb
       reflectedLight.directDiffuse = vec3(0.0);
       irradiance = vec3(0.0);
       #include <lights_fragment_maps>
-      // luz mínima de preenchimento: nenhum canto da casa fica preto (luz de casa acesa, dia claro)
-      irradiance = irradiance + vec3(${LUZ_MINIMA.toFixed(3)});
+      irradiance = vec3(1.0, 0.985, 0.96) * ${DIA.toFixed(3)} + min(irradiance * ${TEMPERO.toFixed(3)}, vec3(2.2));
       iblIrradiance = vec3(0.0);
-      // dentro de casa o chão não reflete o céu inteiro: onde a luz assada é fraca, o reflexo também é
-      radiance *= clamp(dot(irradiance, vec3(0.2126, 0.7152, 0.0722)) * 0.22, 0.0, 1.0);
+      radiance *= 0.4; // dentro de casa o chão não espelha o céu inteiro
       `,
     )
   }
-  s.customProgramCacheKey = () => 'luz-assada'
+  s.customProgramCacheKey = () => 'luz-assada-dia'
+  s.needsUpdate = true
+}
+
+/** O que não tem luz calculada (plantas, livros, brinquedos, vasos…) também fica claro, como de dia */
+export function clarear(m: Material) {
+  const s = m as MeshStandardMaterial
+  if (!('lightMap' in s)) return
+  s.onBeforeCompile = (sh) => {
+    sh.fragmentShader = sh.fragmentShader.replace(
+      '#include <lights_fragment_maps>',
+      `#include <lights_fragment_maps>
+      irradiance += vec3(1.0, 0.985, 0.96) * ${DIA_OBJETOS.toFixed(3)};`,
+    )
+  }
+  s.customProgramCacheKey = () => 'clarear-dia'
   s.needsUpdate = true
 }

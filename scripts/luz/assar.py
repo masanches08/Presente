@@ -17,6 +17,8 @@ from mathutils import Vector
 args = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
 RES = int(args[0]) if len(args) > 0 else 2048
 AMOSTRAS = int(args[1]) if len(args) > 1 else 256
+# "ao" = também assa a oclusão (sombrinha nos cantos e embaixo dos móveis), salva em <andar>.ao.f32
+COM_AO = len(args) > 2 and args[2] == 'ao'
 PASTA = os.path.abspath('.luz')
 t0 = time.time()
 
@@ -209,6 +211,16 @@ for andar in cfg['andares']:
     px = np.empty(RES * RES * 4, dtype=np.float32)
     img.pixels.foreach_get(px)
     px.tofile(os.path.join(PASTA, f'{andar}.f32'))
+
+    if COM_AO:
+        cena.world.light_settings.distance = 0.9  # só os cantinhos (até 90 cm)
+        amostras_luz = cena.cycles.samples
+        cena.cycles.samples = max(32, AMOSTRAS // 2)
+        bpy.ops.object.bake(type='AO', margin=6, use_clear=True)
+        cena.cycles.samples = amostras_luz
+        img.pixels.foreach_get(px)
+        px.tofile(os.path.join(PASTA, f'{andar}.ao.f32'))
+        log(andar, 'oclusão assada')
 
     for ob, p in alvo:
         me = ob.data

@@ -26,7 +26,7 @@ import { aplicarVento, vento } from '../mundo/vento'
 import type { Modelo } from './moveis'
 import { CASA_ARVORE, LAJE_PEGADAS, LOTE, PISCINA, REDE, semGrama, SPA } from './exterior'
 import { geoTapete, montarCasa, type GeoAndar } from './geometria'
-import { comLuz, SOL_CASA, useLuzAssada, usarLuz, type LuzAssada } from './luzAssada'
+import { clarear, comLuz, SOL_CASA, useLuzAssada, usarLuz, type LuzAssada } from './luzAssada'
 import { criarMateriais, ocultar } from './materiais'
 import { texPegadas, texQuadro, texTapeteListrado, texTapetePersa, texTapeteRedondo } from './texturas'
 import { texDesenho, texTapeteInfantil } from './texturasInfantis'
@@ -36,6 +36,9 @@ export type Qualidade = 'alta' | 'media'
 const SOL = SOL_CASA
 
 const SEM_SOMBRA = new Set(['vidro', 'luz', 'cupula', 'voil'])
+const NAO_CLAREAR = new Set(['vidro', 'luz', 'cupula', 'voil', 'fogo', 'espelho', 'tela'])
+// o lado de fora (paredes externas, pedra, telhado): fica com a luz de verdade do sol, com sombra
+const EXTERNOS = new Set(['fachada', 'blocos', 'telhado', 'concreto'])
 
 /** Um modelo escaneado de verdade (plantas, vasos…), escalado pra altura certa e apoiado no chão/móvel */
 function ModeloGLB({ m }: { m: Modelo }) {
@@ -50,6 +53,8 @@ function ModeloGLB({ m }: { m: Modelo }) {
       if ((o as Mesh).isMesh) {
         o.castShadow = true
         o.receiveShadow = true
+        const mats = (o as Mesh).material
+        for (const mat of Array.isArray(mats) ? mats : [mats]) clarear(mat)
       }
     })
     return c
@@ -87,8 +92,10 @@ function Andar3D({ nome: andar, geo, oculto, luz }: { nome: string; geo: GeoAnda
           ? new MeshStandardMaterial({ map: texDesenho(q.desenho), transparent: true, alphaTest: 0.05, roughness: 0.95, depthWrite: false })
           : new MeshStandardMaterial({ map: texQuadro(q.variante), roughness: 0.8 })),
     )
+    // dentro de casa é sempre dia claro: tudo ganha luz de dia (menos vidro, lâmpadas, fogo e espelho)
+    if (andar !== 'fora') for (const [k, mat] of Object.entries(m)) if (!NAO_CLAREAR.has(k) && !EXTERNOS.has(k)) clarear(mat)
     return m as Record<string, Material>
-  }, [geo])
+  }, [geo, andar])
 
   useEffect(() => ocultar(mats, oculto), [mats, oculto])
 
@@ -107,6 +114,7 @@ function Andar3D({ nome: andar, geo, oculto, luz }: { nome: string; geo: GeoAnda
     const mapa = luz?.mapas[andar]
     if (!luz || !mapa) return { pecas: geo.pecas, tapetes: tapetesBase }
     const trocar = (chave: string, g: BufferGeometry) => {
+      if (EXTERNOS.has(chave)) return g
       const nova = comLuz(g, luz.uv.get(`${andar}/${chave}`))
       if (!nova) return g
       usarLuz(mats[chave], mapa)
@@ -378,8 +386,8 @@ export function CenaCasa({ ocultos, qualidade, foco, amplo, luzes }: CenaProps) 
         <Ceu />
       </Environment>
       <fog attach="fog" args={['#DCEBF4', 70, 320]} />
-      <hemisphereLight args={['#FFF3E2', '#E9D6B6', 0.8]} />
-      <ambientLight color="#FFE6C4" intensity={0.18} />
+      <hemisphereLight args={['#FFF6EA', '#EADCC2', 1.1]} />
+      <ambientLight color="#FFF1E0" intensity={0.32} />
       <directionalLight
         ref={sol}
         intensity={3.8}

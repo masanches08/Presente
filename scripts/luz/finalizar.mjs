@@ -90,6 +90,28 @@ for (const andar of cena.andares) {
     .webp({ quality: 90, effort: 6 })
     .toFile(path.join(SAIDA, `${andar}.webp`))
   andares[andar] = { imagem: `${andar}.webp`, escala: Number(escala.toFixed(5)) }
+
+  // oclusão (sombrinha nos cantos): cinza, suavizada, guardada pequena
+  const arqAo = path.join(PASTA, `${andar}.ao.f32`)
+  if (fs.existsSync(arqAo)) {
+    const ao = new Float32Array(fs.readFileSync(arqAo).buffer.slice(0))
+    const cinza = new Float32Array(n * 3)
+    for (let i = 0; i < n; i++) cinza[i * 3] = cinza[i * 3 + 1] = cinza[i * 3 + 2] = ao[i * 4]
+    const aoLiso = suavizar(suavizar(cinza, mascara, 2), mascara, 2)
+    const imgAo = Buffer.alloc(n)
+    for (let y = 0; y < RES; y++)
+      for (let x = 0; x < RES; x++) {
+        const i = y * RES + x
+        // nunca escurece demais: no máximo 45% no cantinho mais fundo
+        imgAo[(RES - 1 - y) * RES + x] = Math.round(255 * (0.55 + 0.45 * Math.min(1, Math.max(0, mascara[i] ? aoLiso[i * 3] : 1))))
+      }
+    await sharp(imgAo, { raw: { width: RES, height: RES, channels: 1 } })
+      .resize(RES / 2, RES / 2)
+      .webp({ quality: 85, effort: 6 })
+      .toFile(path.join(SAIDA, `${andar}.ao.webp`))
+    andares[andar].oclusao = `${andar}.ao.webp`
+    console.log('✓', `${andar}.ao.webp`, Math.round(fs.statSync(path.join(SAIDA, `${andar}.ao.webp`)).size / 1024) + ' KB')
+  }
   console.log('✓', `${andar}.webp`, 'escala', escala.toFixed(3), Math.round(fs.statSync(path.join(SAIDA, `${andar}.webp`)).size / 1024) + ' KB')
 }
 

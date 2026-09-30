@@ -249,8 +249,8 @@ export function CenaCasamento({ qualidade }: { qualidade: Qualidade }) {
       <fog attach="fog" args={['#F1B4A6', 90, 430]} />
 
       {/* luz dourada do sol se pondo + o céu rosado */}
-      <hemisphereLight args={['#EDB9CB', '#D9B089', 0.8]} />
-      <ambientLight color="#FFD7BF" intensity={0.18} />
+      <hemisphereLight args={['#EDB9CB', '#D9B089', 1.0]} />
+      <ambientLight color="#FFD7BF" intensity={0.3} />
       <directionalLight
         ref={sol}
         intensity={2.6}

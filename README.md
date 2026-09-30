@@ -69,12 +69,12 @@ Pra trocar ou adicionar: edite a lista em `scripts/baixar-texturas.mjs` e rode `
 
 ## Luz "assada" da casa (Blender)
 
-A luz de dentro da casa (sol entrando pelas janelas, luz rebatendo nas paredes, cantos mais escuros, abajures acesos) é calculada no **Blender** e guardada em imagens (`public/luz/`). O site só aplica essas imagens, então fica leve e realista.
+Dentro de casa é sempre **dia claro**: todo o interior recebe uma luz branca forte e por igual (não é realista de propósito: tudo tem que aparecer bem). Por cima entram dois "temperos" calculados no **Blender** e guardados em imagens (`public/luz/`): um pouco da luz de verdade (o sol no chão, os abajures acesos) e uma sombrinha suave nos cantos e embaixo dos móveis (pra ter noção de espaço). O lado de fora (paredes externas, telhado) fica com o sol de verdade.
 
 - **Sempre que mudar a casa** (paredes, móveis em `src/casa/`), rode `npm run luz` (uns 30 min, precisa do Blender instalado). Se esquecer, nada quebra: as peças que mudaram só voltam pra luz normal.
 - Rascunho rápido pra testar: `npm run luz -- 2048 16`
 - Os passos ficam em `scripts/luz/`: `exportar.ts` (casa → Blender), `assar.py` (calcula a luz), `limpar.py` (tira o chuvisco), `finalizar.mjs` (gera os arquivos do site)
-- Brilho geral: `EXPOSICAO` em `src/casa/luzAssada.ts`; `LUZ_MINIMA` garante que nenhum canto fica preto
+- Claridade: `DIA` (luz de dia nas paredes/chão), `DIA_OBJETOS` (móveis e objetos) e `TEMPERO` (quanto da luz do Blender entra) em `src/casa/luzAssada.ts`
 
 ## Modelos de verdade
 
