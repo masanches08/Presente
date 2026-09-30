@@ -132,7 +132,7 @@ export function EditorFoto({
         <button onClick={onCancelar} disabled={guardando} className="rounded-full px-4 py-2 text-sm text-creme/75 active:bg-white/10">
           cancelar
         </button>
-        <p className="font-serif text-lg italic text-creme/80">nova foto</p>
+        <p className="font-serif text-lg italic text-creme/80">novo momento</p>
         <span className="w-20" />
       </div>
 
