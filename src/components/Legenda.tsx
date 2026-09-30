@@ -56,7 +56,9 @@ export function Legenda({ foco, onFocar, onEntrar }: Props) {
               >
                 <SetaEsquerda className="size-5" />
               </button>
-              {ponto.disponivel ? (
+              {ponto.soOlhar ? (
+                <span className="flex-1" />
+              ) : ponto.disponivel ? (
                 <button
                   onClick={() => onEntrar(ponto)}
                   className="h-12 flex-1 rounded-full bg-terracota font-medium tracking-wide text-creme shadow-suave transition active:scale-[0.98]"

@@ -38,7 +38,7 @@ Pra ligar a sincronização:
 - `src/data/tour.ts`: nome e frase de cada parada do tour da casa
 - `src/data/casamento.ts`: nome e frase de cada parada do passeio pelo casamento
 - `src/data/luademel.ts`: a lua de mel (tudo bloqueado: as 3 coisas escondidas, hoje "???", e o tempo de desbloqueio)
-- `src/mundo/pontos.ts`: nome e frase de cada coisa do mundinho 3D (casa, altar, correio, árvore, relógio de sol)
+- `src/mundo/pontos.ts`: nome e frase de cada coisa do mundinho 3D (casa, altar, correio, árvore, relógio de sol, barquinho da lua de mel e a quadra de futevôlei, que é só pra olhar)
 
 ## Como o cenário 3D está organizado
 

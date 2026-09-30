@@ -165,8 +165,10 @@ export function Cena({ onFocar, nossoDia, qualidade }: Props) {
         </Interativo>
       </group>
 
-      {/* a quadra de futevôlei, na areia do lado do casamento */}
-      <QuadraFtv />
+      {/* a quadra de futevôlei, na areia do lado do casamento (tocável, só pra olhar) */}
+      <Interativo id="futevolei" onFocar={onFocar}>
+        <QuadraFtv />
+      </Interativo>
 
       {ARVORES.map(([x, z, alt, s]) => (
         <Arvore key={s} semente={s} altura={alt} position={noChao(x, z)} rotation-y={s} />

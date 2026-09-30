@@ -2,7 +2,8 @@ import type { RotaId } from '../lib/rotas'
 import { altura } from './terreno'
 import type { Vec3 } from './util'
 
-export type PontoId = Exclude<RotaId, 'inicio'>
+/** Tudo que dá pra tocar no mundo: as seções (rotas) e a quadra, que é só pra olhar */
+export type PontoId = Exclude<RotaId, 'inicio'> | 'futevolei'
 
 export interface Ponto {
   id: PontoId
@@ -12,6 +13,8 @@ export interface Ponto {
   frase: string
   /** Se a seção já pode ser aberta */
   disponivel: boolean
+  /** Só pra olhar: a câmera vai até lá e mostra a frase, sem botão de entrar */
+  soOlhar?: boolean
   /** Onde fica a etiqueta flutuante */
   marcador: Vec3
   /** Pra onde a câmera olha */
@@ -92,6 +95,20 @@ PONTOS.push({
   alvo: [43.2, 1.0, 8.6],
   direcao: [0.15, 0.3, 1],
   distancia: 10.5,
+})
+
+// a quadra de futevôlei na areia, do lado do casamento (só pra olhar)
+PONTOS.push({
+  id: 'futevolei',
+  sobretitulo: 'onde tudo começou',
+  titulo: 'Nosso Futevôlei',
+  frase: 'O esporte que juntou a gente pela primeira vez. E você joga demais.',
+  disponivel: true,
+  soOlhar: true,
+  marcador: [31, 3.6, -25],
+  alvo: [31, 0.9, -25],
+  direcao: [-0.8, 0.42, 0.55],
+  distancia: 15,
 })
 
 export const pontoPorId = (id: PontoId) => PONTOS.find((p) => p.id === id)!

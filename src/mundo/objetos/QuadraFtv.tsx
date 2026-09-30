@@ -274,6 +274,11 @@ export function QuadraFtv() {
 
   return (
     <group>
+      {/* área de toque invisível, do tamanho da quadra */}
+      <mesh position={[Q.x, yRede + 1.3, Q.z]} userData={{ semSombra: true }}>
+        <boxGeometry args={[Q.comp + 1, 2.6, Q.larg + 3.5]} />
+        <meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} />
+      </mesh>
       <mesh geometry={linhas} material={mats.fita} receiveShadow />
       <mesh geometry={estrutura.metal} material={mats.metal} castShadow />
       <mesh geometry={estrutura.espuma} material={mats.espuma} castShadow />

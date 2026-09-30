@@ -23,7 +23,7 @@ const CasamentoTour = lazy(() => import('./casamento/CasamentoTour'))
 const LuaDeMel = lazy(() => import('./pages/LuaDeMel'))
 
 // (o Nosso Lar abre a casa em 3D, não uma página)
-const PAGINAS: Record<Exclude<PontoId, 'lar' | 'casamento' | 'luademel'>, ComponentType> = {
+const PAGINAS: Record<Exclude<PontoId, 'lar' | 'casamento' | 'luademel' | 'futevolei'>, ComponentType> = {
   cartas: Cartinhas,
   fotos: Fotos,
   dias: NossosDias,
@@ -61,7 +61,7 @@ export default function App() {
       <Marcadores foco={foco} visivel={liberado && !Pagina} onFocar={focar} />
       {nossoDia && liberado && <Petalas />}
       <ContadorCeu c={contador} visivel={liberado && !foco} />
-      <Legenda foco={foco} onFocar={focar} onEntrar={(p) => irPara(p.id)} />
+      <Legenda foco={foco} onFocar={focar} onEntrar={(p) => p.id !== 'futevolei' && irPara(p.id)} />
 
       {/* dica discreta, até ela tocar em alguma coisa */}
       <AnimatePresence>
