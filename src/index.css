@@ -128,6 +128,17 @@
     animation: pulsar 2.6s ease-in-out infinite;
   }
 
+  /* brilho champanhe (claro, pra fundo escuro): usado nas comemorações */
+  .brilho-champanhe {
+    background: linear-gradient(100deg, #e8bf72 20%, #f6d98e 38%, #fff6e2 50%, #f6d98e 62%, #e8bf72 80%);
+    background-size: 250% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: brilho 4.5s var(--ease-suave) infinite;
+    filter: drop-shadow(0 0 18px rgb(255 214 150 / 0.45));
+  }
+
   /* texto com brilho dourado passando (usado no "Feliz X meses!") */
   .brilho-dourado {
     background: linear-gradient(
@@ -191,6 +202,7 @@
 @media (prefers-reduced-motion: reduce) {
   .marcador-ponto,
   .brilho-dourado,
+  .brilho-champanhe,
   .revelar {
     animation: none;
   }

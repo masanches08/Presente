@@ -38,7 +38,8 @@ Pra ligar a sincronização:
 
 ## Onde editar
 
-- `src/config.ts`: apelido dela, iniciais
+- `src/config.ts`: apelido dela, iniciais, dia do aniversário dela (29/10)
+- Dias especiais: no aniversário dela (29/10) e em todo dia 24, o site abre com uma comemoração (`src/components/Celebracao.tsx` e `CeuDeFesta.tsx`). Pra ver sem esperar o dia: `http://localhost:5173/?hoje=2026-10-29` ou `?hoje=2026-10-24`
 - `src/data/datas.ts`: datas iniciais do calendário
 - `src/data/cartas.ts`: as cartinhas e as "abra quando…" (troque os `TODO`)
 - `src/data/tour.ts`: nome e frase de cada parada do tour da casa

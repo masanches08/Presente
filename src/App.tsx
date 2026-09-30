@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { lazy, Suspense, useMemo, useState, type ComponentType } from 'react'
 import { Carregando } from './components/Carregando'
+import { Celebracao } from './components/Celebracao'
 import { ContadorCeu } from './components/ContadorCeu'
 import { Folha } from './components/Folha'
 import { Legenda } from './components/Legenda'
@@ -10,6 +11,7 @@ import { Petalas } from './components/Petalas'
 import { useHoje } from './hooks/useHoje'
 import { useSessao } from './hooks/useSessao'
 import { irPara, useRota } from './hooks/useRota'
+import { celebracaoDoDia } from './lib/celebracao'
 import { calcularContador } from './lib/contador'
 import type { PontoId } from './mundo/pontos'
 import Cartinhas from './pages/Cartinhas'
@@ -33,6 +35,7 @@ export default function App() {
   const rota = useRota()
   const hoje = useHoje()
   const contador = useMemo(() => calcularContador(hoje), [hoje])
+  const celebracao = useMemo(() => celebracaoDoDia(hoje, contador), [hoje, contador])
   const nossoDia = contador.tipo === 'aniversario' || contador.tipo === 'inicio'
 
   const [foco, setFoco] = useState<PontoId | null>(null)
@@ -55,7 +58,7 @@ export default function App() {
   return (
     <>
       <Suspense fallback={null}>
-        <Mundo foco={foco} onFocar={focar} nossoDia={nossoDia} pausado={!!Pagina || naCasa || noCasamento || naLuaDeMel} onPronto={() => setPronto(true)} />
+        <Mundo foco={foco} onFocar={focar} nossoDia={nossoDia || celebracao?.tipo === 'aniversario'} pausado={!!Pagina || naCasa || noCasamento || naLuaDeMel} onPronto={() => setPronto(true)} />
       </Suspense>
 
       <Marcadores foco={foco} visivel={liberado && !Pagina} onFocar={focar} />
@@ -81,6 +84,9 @@ export default function App() {
           </motion.p>
         )}
       </AnimatePresence>
+
+      {/* dia especial (aniversário dela ou dia 24): o "momento" de abertura */}
+      {celebracao && <Celebracao key={celebracao.tipo} celebracao={celebracao} visivel={liberado} />}
 
       <AnimatePresence>{!pronto && <Carregando />}</AnimatePresence>
       <AnimatePresence>{pronto && precisaLogin && <Login />}</AnimatePresence>
