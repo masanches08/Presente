@@ -64,7 +64,7 @@ export const PONTOS: Ponto[] = [
     titulo: 'Nossas Fotos',
     frase: 'Os nossos momentos, secando ao sol.',
     disponivel: true,
-    marcador: [-12, 10, 3],
+    marcador: [-10.1, 2.9, 4.8], // logo acima do varal das fotos
     alvo: [-10.1, 2.0, 4.8],
     direcao: [-0.35, 0.26, 1],
     distancia: 8.5,
