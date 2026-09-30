@@ -1,0 +1,177 @@
+@import "tailwindcss";
+
+/* Identidade visual: cores e fontes viram classes do Tailwind (ex.: bg-creme, text-terracota, font-serif) */
+@theme {
+  --color-creme: #faf7f2;
+  --color-papel: #fffdf9;
+  --color-salvia: #9caf88;
+  --color-salvia-escuro: #6f8360;
+  --color-terracota: #c8643b;
+  --color-dourado: #c9a86a;
+  --color-rosado: #e8b4a0;
+  --color-grafite: #2e2a26;
+
+  --font-serif: "Cormorant Garamond", ui-serif, Georgia, serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  --shadow-suave: 0 1px 2px rgb(46 42 38 / 0.04), 0 12px 32px -12px rgb(46 42 38 / 0.14);
+  --shadow-flutuante: 0 -1px 0 rgb(201 168 106 / 0.15), 0 -12px 32px -16px rgb(46 42 38 / 0.18);
+
+  --ease-suave: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@layer base {
+  html {
+    background: var(--color-creme);
+    color: var(--color-grafite);
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    min-height: 100dvh;
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    /* o mundo 3D ocupa a tela toda: nada de rolar a página */
+    overflow: hidden;
+    overscroll-behavior: none;
+    /* mesma cor do céu, pra não piscar enquanto carrega */
+    background: linear-gradient(#e2c3bb, #f6d7b0);
+  }
+
+  button {
+    cursor: pointer;
+  }
+
+  /* inputs com 16px evitam o zoom automático do iPhone ao tocar */
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+
+  ::selection {
+    background: rgb(200 100 59 / 0.2);
+  }
+}
+
+@layer components {
+  /* textinho pequeno em caixa-alta, usado acima dos títulos */
+  .sobretitulo {
+    font-size: 11px;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: var(--color-dourado);
+    font-weight: 500;
+  }
+
+  .cartao {
+    background: rgb(255 253 249 / 0.78);
+    border: 1px solid rgb(201 168 106 / 0.22);
+    border-radius: 28px;
+    box-shadow: var(--shadow-suave);
+    backdrop-filter: blur(6px);
+  }
+
+  /* textos por cima do céu: uma aura clarinha ajuda a ler */
+  .texto-ceu {
+    text-shadow:
+      0 0 18px rgb(255 247 236 / 0.85),
+      0 0 2px rgb(255 247 236 / 0.6);
+  }
+
+  /* no céu, o texto dourado usa uma aura "por trás" (text-shadow apareceria por cima das letras transparentes) */
+  .texto-ceu .brilho-dourado {
+    text-shadow: none;
+    filter: drop-shadow(0 0 12px rgb(255 247 236 / 0.75));
+  }
+
+  /* etiquetas flutuantes dos objetos do mundo 3D */
+  .marcador {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 7px;
+    padding: 6px;
+    transition:
+      opacity 0.5s var(--ease-suave),
+      transform 0.5s var(--ease-suave);
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  .marcador-oculto {
+    opacity: 0;
+    transform: translateY(8px) scale(0.96);
+    pointer-events: none;
+  }
+  .marcador-nome {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: 16px;
+    line-height: 1;
+    white-space: nowrap;
+    color: var(--color-grafite);
+    background: rgb(255 253 249 / 0.72);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    padding: 6px 12px 7px;
+    border-radius: 999px;
+    box-shadow: 0 6px 18px -8px rgb(46 42 38 / 0.35);
+    border: 1px solid rgb(201 168 106 / 0.3);
+    transition: transform 0.3s var(--ease-suave);
+  }
+  .marcador-ponto {
+    width: 9px;
+    height: 9px;
+    border-radius: 999px;
+    background: #fffdf9;
+    animation: pulsar 2.6s ease-in-out infinite;
+  }
+
+  /* texto com brilho dourado passando (usado no "Feliz X meses!") */
+  .brilho-dourado {
+    background: linear-gradient(
+      100deg,
+      #a8482a 20%,
+      #a67a34 40%,
+      #e8bf72 50%,
+      #a67a34 60%,
+      #a8482a 80%
+    );
+    background-size: 250% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: brilho 4.5s var(--ease-suave) infinite;
+  }
+}
+
+@keyframes brilho {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -150% 0;
+  }
+}
+
+@keyframes pulsar {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 2px rgb(200 100 59 / 0.9),
+      0 0 12px 3px rgb(255 214 150 / 0.8);
+  }
+  50% {
+    box-shadow:
+      0 0 0 6px rgb(200 100 59 / 0.18),
+      0 0 22px 8px rgb(255 214 150 / 0.9);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marcador-ponto,
+  .brilho-dourado {
+    animation: none;
+  }
+}
