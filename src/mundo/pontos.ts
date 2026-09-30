@@ -102,7 +102,7 @@ PONTOS.push({
   id: 'futevolei',
   sobretitulo: 'onde tudo começou',
   titulo: 'Nosso Futevôlei',
-  frase: 'O esporte que juntou a gente pela primeira vez. E você joga demais.',
+  frase: 'O esporte que juntou a gente pela primeira vez. E alguém aqui é craque.',
   disponivel: true,
   soOlhar: true,
   marcador: [31, 3.6, -25],
