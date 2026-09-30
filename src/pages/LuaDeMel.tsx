@@ -2,9 +2,10 @@ import { Canvas, useThree } from '@react-three/fiber'
 import { Bloom, EffectComposer, HueSaturation, ToneMapping } from '@react-three/postprocessing'
 import { motion } from 'framer-motion'
 import { ToneMappingMode } from 'postprocessing'
-import { useLayoutEffect } from 'react'
+import { useEffect, useLayoutEffect, useState } from 'react'
 import { ESCONDIDOS, TEMPO_DESBLOQUEIO } from '../data/luademel'
 import { CENTRO, CenaLuaDeMel } from '../luademel/Cena'
+import { somDePaz } from '../lib/somDePaz'
 
 function Cadeado({ className = '' }: { className?: string }) {
   return (
@@ -46,7 +47,27 @@ function Fundo() {
 }
 
 /** Lua de mel: tudo bloqueado. Só dá pra ver que existem 3 coisas escondidas (e "sem dicks": brincadeira nossa). */
+function IconeSom({ ligado }: { ligado: boolean }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" />
+      {ligado ? <path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11" /> : <path d="m16 9.5 5 5m0-5-5 5" />}
+    </svg>
+  )
+}
+
 export default function LuaDeMel({ onSair }: { onSair: () => void }) {
+  // som de paz bem baixinho (começa ligado; o navegador só deixa tocar depois de um toque)
+  const [som, setSom] = useState(true)
+  useEffect(() => {
+    somDePaz(som)
+    if (!som) return
+    const tocar = () => somDePaz(true)
+    window.addEventListener('pointerdown', tocar, { once: true })
+    return () => window.removeEventListener('pointerdown', tocar)
+  }, [som])
+  useEffect(() => () => somDePaz(false), [])
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -60,6 +81,15 @@ export default function LuaDeMel({ onSair }: { onSair: () => void }) {
         <Fundo />
       </div>
       <div className="absolute inset-0 bg-[#0E1A24]/45 backdrop-blur-xl" />
+
+      <button
+        onClick={() => setSom((v) => !v)}
+        aria-label={som ? 'Desligar o som' : 'Ligar o som'}
+        className="absolute top-4 right-4 z-10 grid size-10 place-items-center rounded-full bg-white/10 text-white/70 ring-1 ring-white/25 backdrop-blur-md active:scale-[0.97]"
+        style={{ marginTop: 'env(safe-area-inset-top)' }}
+      >
+        <IconeSom ligado={som} />
+      </button>
 
       <div className="relative flex h-full flex-col items-center justify-center px-8 text-center">
         <motion.div
