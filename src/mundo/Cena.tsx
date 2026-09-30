@@ -51,7 +51,7 @@ const ARVORES: [number, number, number, number][] = [
   [11, -11, 8, 2],
   [-5, -16.5, 10.5, 3],
   [13, 12.5, 7, 5],
-  [-14.5, 13, 7.5, 6],
+  [-19.5, 15.5, 7.5, 6], // (afastada: não fica na frente do varal das fotos)
   [-21, 2, 8.5, 7],
   [5.5, -20, 9, 8],
   [-24, -12, 10, 9],

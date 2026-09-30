@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { IconeFechar, SetaDireita, SetaEsquerda } from '../components/Icons'
 import { PageHeader } from '../components/PageHeader'
-import { FOTOS, urlFoto, type Foto } from '../data/fotos'
+import { FOTOS, urlFoto, urlMini, type Foto } from '../data/fotos'
 import { formatarData, lerData } from '../lib/datas'
 
 /** Tela cheia: desliza pro lado pra trocar de foto */
@@ -46,7 +46,7 @@ function Visualizador({ indice, onTrocar, onFechar }: { indice: number; onTrocar
       exit={{ opacity: 0 }}
       style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
-      <div className="flex items-center justify-between px-3 py-2 text-creme/70">
+      <div className="relative z-10 flex items-center justify-between px-3 py-2 text-creme/80">
         <span className="px-3 text-sm tabular-nums">
           {indice + 1} / {FOTOS.length}
         </span>
@@ -54,6 +54,21 @@ function Visualizador({ indice, onTrocar, onFechar }: { indice: number; onTrocar
           <IconeFechar className="size-6" />
         </button>
       </div>
+
+      {/* fundo: a própria foto, desfocada (sem faixa preta em volta) */}
+      <AnimatePresence initial={false}>
+        <motion.img
+          key={'fundo' + foto.arquivo}
+          src={urlMini(foto)}
+          alt=""
+          aria-hidden
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 0.55 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.6 }}
+          className="pointer-events-none absolute inset-0 size-full scale-125 object-cover blur-3xl"
+        />
+      </AnimatePresence>
 
       <div className="relative flex-1 overflow-hidden">
         <AnimatePresence initial={false} custom={direcao}>
@@ -94,7 +109,7 @@ function Visualizador({ indice, onTrocar, onFechar }: { indice: number; onTrocar
         )}
       </div>
 
-      <div className="min-h-24 px-6 pt-4 pb-6 text-center">
+      <div className="relative min-h-24 px-6 pt-4 pb-6 text-center">
         {foto.legenda && <p className="font-serif text-2xl text-creme italic">{foto.legenda}</p>}
         {foto.data && <p className="mt-1 text-sm text-creme/50">{formatarData(lerData(foto.data))}</p>}
       </div>
@@ -102,23 +117,26 @@ function Visualizador({ indice, onTrocar, onFechar }: { indice: number; onTrocar
   )
 }
 
-function Miniatura({ foto, onClick }: { foto: Foto; onClick: () => void }) {
+/** Uma polaroid: todas no mesmo formato (3:4), levemente tortinhas */
+function Miniatura({ foto, indice, onClick }: { foto: Foto; indice: number; onClick: () => void }) {
   const [carregou, setCarregou] = useState(false)
   return (
     <motion.button
       onClick={onClick}
       whileTap={{ scale: 0.97 }}
-      className="mb-3 block w-full break-inside-avoid overflow-hidden rounded-2xl bg-papel shadow-suave ring-1 ring-dourado/15"
+      className={`block w-full rounded-2xl bg-papel p-2 pb-7 text-left shadow-suave ring-1 ring-dourado/15 ${indice % 2 ? 'rotate-1' : '-rotate-1'}`}
     >
-      <img
-        src={urlFoto(foto)}
-        alt={foto.legenda ?? ''}
-        loading="lazy"
-        decoding="async"
-        onLoad={() => setCarregou(true)}
-        className={`block w-full transition-opacity duration-700 ${carregou ? 'opacity-100' : 'opacity-0'}`}
-      />
-      {foto.legenda && <p className="px-3 py-2 text-left font-serif text-base text-grafite/70 italic">{foto.legenda}</p>}
+      <div className="aspect-[3/4] overflow-hidden rounded-lg bg-[#EFE6D8]">
+        <img
+          src={urlMini(foto)}
+          alt={foto.legenda ?? ''}
+          loading="lazy"
+          decoding="async"
+          onLoad={() => setCarregou(true)}
+          className={`size-full object-cover transition-opacity duration-700 ${carregou ? 'opacity-100' : 'opacity-0'}`}
+        />
+      </div>
+      {foto.legenda && <p className="-mb-4 px-1 pt-2 font-serif text-base leading-tight text-grafite/70 italic">{foto.legenda}</p>}
     </motion.button>
   )
 }
@@ -149,9 +167,9 @@ export default function Fotos() {
           <p className="mt-8 text-center font-serif text-xl text-grafite/50 italic">as nossas fotos vão morar aqui ♡</p>
         </>
       ) : (
-        <div className="columns-2 gap-3 sm:columns-3">
+        <div className="grid grid-cols-2 gap-x-3 gap-y-4 pb-6 sm:grid-cols-3">
           {FOTOS.map((f, i) => (
-            <Miniatura key={f.arquivo} foto={f} onClick={() => setAberta(i)} />
+            <Miniatura key={f.arquivo} foto={f} indice={i} onClick={() => setAberta(i)} />
           ))}
         </div>
       )}

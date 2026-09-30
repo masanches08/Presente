@@ -1,7 +1,7 @@
 import { useFrame, type ThreeElements } from '@react-three/fiber'
 import { useMemo, useRef } from 'react'
 import { QuadraticBezierCurve3, SRGBColorSpace, TextureLoader, TubeGeometry, Vector3, type Group, type Texture } from 'three'
-import { FOTOS, urlFoto } from '../../data/fotos'
+import { FOTOS, urlMini } from '../../data/fotos'
 import { Arvore } from '../Arvore'
 import { altura } from '../terreno'
 import type { Vec3 } from '../util'
@@ -11,31 +11,21 @@ type Props = ThreeElements['group']
 // Enquanto não tem foto, cada polaroid mostra uma cor clarinha
 const CORES_FOTO = ['#F2A07B', '#8CC6E8', '#F6D365', '#B9E4A8', '#E89AC7', '#FFC09F']
 
-/** Carrega a foto e recorta no meio, quadradinha, como uma polaroid */
-function useFotoQuadrada(indice: number) {
+/** Carrega a versão menor da foto (já vem em 3:4, o formato da polaroid) */
+function useFoto(indice: number) {
   return useMemo<Texture | null>(() => {
     const foto = FOTOS[indice]
     if (!foto) return null
-    const t = new TextureLoader().load(urlFoto(foto), (tex) => {
-      const img = tex.image as HTMLImageElement
-      const r = img.width / img.height
-      if (r > 1) {
-        tex.repeat.set(1 / r, 1)
-        tex.offset.set((1 - 1 / r) / 2, 0)
-      } else {
-        tex.repeat.set(1, r)
-        tex.offset.set(0, (1 - r) / 2)
-      }
-      tex.needsUpdate = true
-    })
+    const t = new TextureLoader().load(urlMini(foto))
     t.colorSpace = SRGBColorSpace
+    t.anisotropy = 4
     return t
   }, [indice])
 }
 
 function Polaroid({ indice, ...props }: Props & { indice: number }) {
   const ref = useRef<Group>(null)
-  const foto = useFotoQuadrada(indice)
+  const foto = useFoto(indice)
   useFrame(({ clock }) => {
     if (ref.current) ref.current.rotation.x = Math.sin(clock.elapsedTime * 1.3 + indice * 1.7) * 0.14
   })
@@ -46,13 +36,13 @@ function Polaroid({ indice, ...props }: Props & { indice: number }) {
           <boxGeometry args={[0.04, 0.09, 0.03]} />
           <meshStandardMaterial color="#C9A06F" />
         </mesh>
-        <mesh position-y={-0.23} castShadow>
-          <boxGeometry args={[0.36, 0.44, 0.01]} />
+        <mesh position-y={-0.25} castShadow>
+          <boxGeometry args={[0.32, 0.46, 0.01]} />
           <meshStandardMaterial color="#FFFEFA" roughness={0.5} />
         </mesh>
         {[1, -1].map((lado) => (
-          <mesh key={lado} position={[0, -0.2, lado * 0.0056]} rotation-y={lado === 1 ? 0 : Math.PI}>
-            <planeGeometry args={[0.3, 0.3]} />
+          <mesh key={lado} position={[0, -0.21, lado * 0.0056]} rotation-y={lado === 1 ? 0 : Math.PI}>
+            <planeGeometry args={[0.27, 0.36]} />
             {foto ? (
               <meshStandardMaterial map={foto} roughness={0.4} />
             ) : (

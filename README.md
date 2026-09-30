@@ -27,7 +27,7 @@ Pra ligar a sincronização:
 ## Fotos
 
 1. Coloque as fotos na pasta `fotos-originais/` (crie na raiz do projeto)
-2. Rode `npm run fotos`: elas viram `.webp` leves em `public/fotos/`
+2. Rode `npm run fotos`: elas viram `.webp` em 3:4 (recortadas, sem borda) em `public/fotos/`, mais uma versão menor em `public/fotos/mini/` (galeria e varal). Recorte escolhido na mão: `RECORTES` em `scripts/converter-fotos.mjs`
 3. Cole a lista que aparece no terminal em `src/data/fotos.ts` e escreva as legendas
 
 ## Onde editar
