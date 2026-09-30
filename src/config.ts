@@ -7,6 +7,12 @@ export const CONFIG = {
   /** O aniversário dela (mes: 10 = outubro): nesse dia, o site abre com "Feliz aniversário". */
   aniversarioDela: { dia: 29, mes: 10 },
 
+  /**
+   * A conta única do casal no Supabase (ninguém digita isso: o site entra sozinho
+   * quando a resposta de "Nome do amor da minha vida:" está certa).
+   */
+  contaDoLar: 'nos@nossolar.app',
+
   /** Fuso usado pra saber "que dia é hoje". */
   fuso: 'America/Sao_Paulo',
 

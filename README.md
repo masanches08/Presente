@@ -19,7 +19,7 @@ Pra ligar a sincronização:
 1. Crie uma conta em https://supabase.com → **New project** (anote a senha do banco; região São Paulo).
 2. No projeto: **SQL Editor → New query**, cole o conteúdo de `supabase/schema.sql` e clique em **Run**.
 3. **Authentication → Sign In / Providers**: desligue **"Allow new users to sign up"** (sem cadastro público).
-4. **Authentication → Users → Add user → Create new user**: crie a sua conta e a dela (marque *Auto Confirm User*).
+4. **Entrar sem e-mail e senha**: o site pergunta "Nome do amor da minha vida:". Pra isso, crie o usuário `nos@nossolar.app` em **Authentication → Users → Add user** (qualquer senha provisória, *Auto Confirm User*) e depois rode `supabase/entrar-sem-senha.sql` no SQL Editor. As respostas aceitas ficam na função `chave_do_lar` desse arquivo (dá pra mudar e rodar de novo).
 5. **Project Settings → API**: copie a *Project URL* e a chave *anon public*.
 6. Na pasta do projeto, copie `.env.example` para `.env.local` e cole as duas chaves.
 7. Pare e rode de novo o `npm run dev`. Agora aparece a tela de login.

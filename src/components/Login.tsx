@@ -1,34 +1,43 @@
 import { motion } from 'framer-motion'
 import { useState, type FormEvent } from 'react'
+import { CONFIG } from '../config'
 import { supabase } from '../lib/supabase'
 import { CoracaoCheio } from './Icons'
 import { Ornamento } from './Ornamento'
 
 /**
  * A primeira coisa que ela vê: um cartão de vidro por cima do nosso cantinho em 3D.
- * Só existem 2 contas (criadas no painel do Supabase), não tem cadastro.
+ * Nada de e-mail e senha: só "Nome do amor da minha vida:".
+ * Quem confere a resposta é o Supabase (função chave_do_lar, em supabase/entrar-sem-senha.sql):
+ * se estiver certa, ele devolve a senha técnica da conta única do casal e o site entra sozinho.
+ * Ela responde uma vez em cada aparelho; depois o site lembra.
  */
 export function Login() {
-  const [email, setEmail] = useState('')
-  const [senha, setSenha] = useState('')
+  const [resposta, setResposta] = useState('')
   const [enviando, setEnviando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
 
   const entrar = async (e: FormEvent) => {
     e.preventDefault()
-    if (!supabase) return
+    if (!supabase || !resposta.trim()) return
     setEnviando(true)
     setErro(null)
-    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password: senha })
+    const { data: chave, error: erroChave } = await supabase.rpc('chave_do_lar', { resposta })
+    if (erroChave) {
+      setEnviando(false)
+      // (PGRST202 = a função ainda não foi criada no Supabase)
+      setErro(erroChave.code === 'PGRST202' ? 'Falta terminar de preparar o Supabase (entrar-sem-senha.sql).' : 'Não consegui conectar agora. Confere a internet?')
+      return
+    }
+    if (!chave) {
+      setEnviando(false)
+      setErro('Hmm… não é bem isso. Tenta de novo?')
+      return
+    }
+    const { error } = await supabase.auth.signInWithPassword({ email: CONFIG.contaDoLar, password: chave as string })
     setEnviando(false)
-    if (!error) return
-    // senha errada é diferente de "sem internet"
-    if (error.status === 400 || /invalid/i.test(error.message)) setErro('Hmm, e-mail ou senha não conferem. Tenta de novo?')
-    else setErro('Não consegui conectar agora. Confere a internet?')
+    if (error) setErro('Não consegui entrar agora. Tenta de novo daqui a pouquinho?')
   }
-
-  const campo =
-    'w-full rounded-2xl border border-dourado/30 bg-papel/80 px-4 py-3.5 outline-none transition placeholder:text-grafite/35 focus:border-terracota/50 focus:bg-papel'
 
   return (
     <motion.div
@@ -58,33 +67,29 @@ export function Login() {
         <p className="mt-3 font-serif text-lg text-grafite/60 italic">um cantinho feito pra gente</p>
         <Ornamento className="my-6" />
 
-        <div className="space-y-3 text-left">
-          <input
-            type="email"
-            autoComplete="email"
-            inputMode="email"
-            placeholder="seu e-mail"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className={campo}
-            required
-          />
-          <input
-            type="password"
-            autoComplete="current-password"
-            placeholder="sua senha"
-            value={senha}
-            onChange={(e) => setSenha(e.target.value)}
-            className={campo}
-            required
-          />
-        </div>
+        <label htmlFor="resposta" className="block font-serif text-xl text-grafite/80 italic">
+          Nome do amor da minha vida:
+        </label>
+        <input
+          id="resposta"
+          type="text"
+          autoComplete="off"
+          autoCapitalize="words"
+          spellCheck={false}
+          value={resposta}
+          onChange={(e) => {
+            setResposta(e.target.value)
+            setErro(null)
+          }}
+          className="mt-3 w-full rounded-2xl border border-dourado/30 bg-papel/80 px-4 py-3.5 text-center font-serif text-xl outline-none transition focus:border-terracota/50 focus:bg-papel"
+          required
+        />
 
         {erro && <p className="mt-4 font-serif text-lg text-terracota italic">{erro}</p>}
 
         <button
           type="submit"
-          disabled={enviando}
+          disabled={enviando || !resposta.trim()}
           className="mt-6 w-full rounded-full bg-terracota py-4 font-medium tracking-wide text-creme shadow-suave transition active:scale-[0.98] disabled:opacity-60"
         >
           {enviando ? 'entrando…' : 'entrar'}
