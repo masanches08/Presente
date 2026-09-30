@@ -235,12 +235,12 @@ function Adicionar({ indice, onEscolher }: { indice: number; onEscolher: () => v
       whileTap={{ scale: 0.97 }}
       style={{ rotate: giro }}
       className="block w-full rounded-2xl bg-papel/70 p-2 pb-7 text-left shadow-suave ring-1 ring-dourado/15"
-      aria-label="Adicionar um momento"
+      aria-label="Adicionar uma lembrança"
     >
       <div className="grid aspect-[3/4] place-items-center rounded-lg border-2 border-dashed border-dourado/35 bg-[#F6EFE4]">
         <div className="flex flex-col items-center gap-2 text-grafite/45">
           <span className="grid size-12 place-items-center rounded-full bg-white/80 text-3xl leading-none font-light text-terracota shadow-suave">+</span>
-          <span className="font-serif text-lg italic">adicionar momento</span>
+          <span className="font-serif text-lg italic">adicionar lembrança</span>
         </div>
       </div>
     </motion.button>

@@ -26,7 +26,7 @@ Pra ligar a sincronização:
 
 ## Fotos
 
-**Pelo próprio site:** no fim da galeria tem a polaroid "adicionar momento". Escolhe uma foto (ou um vídeo: vira o primeiro frame), arrasta/aproxima pra escolher o recorte 3:4, escreve uma legenda se quiser e "guardar no varal". Dá pra apagar pela lixeirinha (só as fotos mandadas pelo site).
+**Pelo próprio site:** no fim da galeria tem a polaroid "adicionar lembrança". Escolhe uma foto (ou um vídeo: vira o primeiro frame), arrasta/aproxima pra escolher o recorte 3:4, escreve uma legenda se quiser e "guardar no varal". Dá pra apagar pela lixeirinha (só as fotos mandadas pelo site).
 - Com o Supabase configurado: as fotos vão pra uma pasta privada na nuvem e aparecem nos dois celulares. (Rode o `supabase/schema.sql` inteiro de novo: ele cria a tabela `fotos` e a pasta.)
 - Sem o Supabase: ficam guardadas só no aparelho que mandou (pra testar).
 
