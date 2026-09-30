@@ -1,6 +1,6 @@
-import { ClampToEdgeWrapping, Color, DoubleSide, Material, MeshStandardMaterial, Vector2, type Texture } from 'three'
+import { ClampToEdgeWrapping, Color, DoubleSide, Material, MeshStandardMaterial, type Texture } from 'three'
 import { materialRosas } from '../mundo/arranjos'
-import { texReal } from '../lib/texturasReais'
+import { relevoReal, texReal } from '../lib/texturasReais'
 import { texBlocos, texFolhas, texJuta, texMadeira, texPedra, texReboco } from '../mundo/texturas'
 import { Y1, Y2 } from './construcao'
 import { texAzulejo, texMarmore, texPisoBanho } from './texturas'
@@ -42,9 +42,8 @@ const rep = (t: Texture) => {
 
 // fotos escaneadas (Poly Haven, CC0): relevo do reboco, madeira, trama de tecido…
 // (cor acima de 1 = clarear a foto até o tom que a gente quer; as contas são em cor linear)
-const REBOCO = 'painted_plaster_wall'
-const relevo = (id: string, forca = 1) => ({ normalMap: texReal(id, 'nor'), normalScale: new Vector2(forca, forca) })
-const reboco = (cor: string, forca = 0.9) => new MeshStandardMaterial({ color: cor, roughness: 1, roughnessMap: texReal(REBOCO, 'rough'), ...relevo(REBOCO, forca) })
+const relevo = (id: string, forca = 1) => relevoReal(id, forca)
+const reboco = (cor: string) => new MeshStandardMaterial({ color: cor, roughness: 0.95 })
 
 /** Parede em degradê: a textura vai do chão (Y1) até o teto (Y2) do 2º andar */
 function degrade(baixo: string, meio: string, cima: string) {
@@ -52,7 +51,7 @@ function degrade(baixo: string, meio: string, cima: string) {
   t.wrapS = t.wrapT = ClampToEdgeWrapping
   t.offset.set(0, -Y1 / (Y2 - Y1))
   t.needsUpdate = true
-  return new MeshStandardMaterial({ map: t, roughness: 0.95, ...relevo(REBOCO, 0.35) })
+  return new MeshStandardMaterial({ map: t, roughness: 0.95 })
 }
 
 const tecido = (cor: string) => new MeshStandardMaterial({ color: cor, roughness: 1, ...relevo('poly_wool_herringbone', 0.9) })
@@ -78,11 +77,11 @@ export function criarMateriais() {
     degradeCeu: degrade('#86CCD9', '#A6DCCF', '#DDF3E8'), // azul-céu que vira verde-menta
     degradeSol: degrade('#FFB77A', '#FFD86E', '#FFF3C4'), // pêssego que vira amarelo-sol
     degradeFlor: degrade('#F2A6C1', '#E4B4E0', '#DCCDF5'), // rosa que vira lilás
-    fachada: std('#EDE7DD', { map: rep(texReboco()), roughness: 0.92, ...relevo(REBOCO, 0.7) }),
-    blocos: std('#FFFFFF', { map: rep(texBlocos()), roughness: 0.9, ...relevo(REBOCO, 0.5) }),
-    teto: reboco('#FBF8F3', 0.35),
+    fachada: std('#EDE7DD', { map: rep(texReboco()), roughness: 0.92 }),
+    blocos: std('#FFFFFF', { map: rep(texBlocos()), roughness: 0.9 }),
+    teto: reboco('#FBF8F3'),
     // (cor acima de 1 clareia e esquenta a foto: madeira clarinha como na referência)
-    piso: std('#FFFFFF', { color: new Color(1.45, 1.26, 1.0), map: texReal('laminate_floor_02', 'diff'), roughnessMap: texReal('laminate_floor_02', 'rough'), roughness: 0.8, ...relevo('laminate_floor_02') }),
+    piso: std('#FFFFFF', { color: new Color(1.45, 1.26, 1.0), map: texReal('laminate_floor_02', 'diff'), roughness: 0.75, ...relevo('laminate_floor_02') }),
     pisoBanho: std('#FFFFFF', { map: rep(texPisoBanho()), roughness: 0.4 }),
     azulejo: std('#FFFFFF', { map: rep(texAzulejo()), roughness: 0.25 }),
     marmore: std('#FFFFFF', { map: rep(texMarmore()), roughness: 0.25 }),

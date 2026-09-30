@@ -1,10 +1,5 @@
-import { Canvas, useThree } from '@react-three/fiber'
-import { Bloom, EffectComposer, HueSaturation, ToneMapping } from '@react-three/postprocessing'
 import { motion } from 'framer-motion'
-import { ToneMappingMode } from 'postprocessing'
-import { useLayoutEffect } from 'react'
 import { ESCONDIDOS, TEMPO_DESBLOQUEIO } from '../data/luademel'
-import { CENTRO, CenaLuaDeMel } from '../luademel/Cena'
 
 function Cadeado({ className = '' }: { className?: string }) {
   return (
@@ -13,35 +8,6 @@ function Cadeado({ className = '' }: { className?: string }) {
       <path d="M8 10.5V7.5a4 4 0 0 1 8 0v3" />
       <circle cx="12" cy="15.3" r="1.2" fill="currentColor" />
     </svg>
-  )
-}
-
-// o fundo: as casinhas sobre o mar vistas do alto, em 3D, desfocadas atrás do cadeado
-const [vx, vz] = CENTRO.vilas
-const CAM: [number, number, number] = [vx - 70, 120, vz + 170]
-const ALVO: [number, number, number] = [vx + 30, 0, vz - 10]
-
-function Olhar() {
-  const camera = useThree((s) => s.camera)
-  useLayoutEffect(() => {
-    camera.position.set(...CAM)
-    camera.lookAt(...ALVO)
-  }, [camera])
-  return null
-}
-
-function Fundo() {
-  const celular = typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches
-  return (
-    <Canvas shadows="percentage" dpr={1} camera={{ fov: 55, near: 0.5, far: 2400, position: CAM }} gl={{ antialias: false, powerPreference: 'high-performance' }}>
-      <Olhar />
-      <CenaLuaDeMel zona="vilas" foco={ALVO} raioSombra={80} qualidade={celular ? 'media' : 'alta'} />
-      <EffectComposer multisampling={0}>
-        <Bloom mipmapBlur intensity={0.45} luminanceThreshold={0.95} luminanceSmoothing={0.2} />
-        <ToneMapping mode={ToneMappingMode.NEUTRAL} />
-        <HueSaturation saturation={0.08} />
-      </EffectComposer>
-    </Canvas>
   )
 }
 
@@ -56,10 +22,9 @@ export default function LuaDeMel({ onSair }: { onSair: () => void }) {
       className="fixed inset-0 z-50 overflow-hidden bg-[#1C4A5A] text-white"
       style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
-      <div className="absolute inset-0">
-        <Fundo />
-      </div>
-      <div className="absolute inset-0 bg-[#0E1A24]/45 backdrop-blur-xl" />
+      {/* fundo: as casinhas sobre o mar (uma foto do cenário 3D, desfocada: leve e igualzinha) */}
+      <img src={`${import.meta.env.BASE_URL}luademel/fundo.webp`} alt="" aria-hidden className="absolute inset-0 size-full scale-110 object-cover blur-2xl" />
+      <div className="absolute inset-0 bg-[#0E1A24]/45" />
 
       <div className="relative flex h-full flex-col items-center justify-center px-8 text-center">
         <motion.div

@@ -1,3 +1,4 @@
+import { Environment } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import { Suspense, useLayoutEffect, useMemo, useRef } from 'react'
 import {
@@ -25,9 +26,8 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import { criarArranjos, materialRosas } from '../mundo/arranjos'
 import { Coqueiro, matFolhas } from '../mundo/Arvore'
 import { criarTufo } from '../mundo/Grama'
-import { CeuHDR } from '../mundo/CeuHDR'
 import { Passaros } from '../mundo/Passaros'
-import { texReal } from '../lib/texturasReais'
+import { relevoReal, texReal } from '../lib/texturasReais'
 import { texJuta, texLavanda, texMadeira } from '../mundo/texturas'
 import { aplicarVento, vento } from '../mundo/vento'
 import { texMarmore } from '../casa/texturas'
@@ -134,7 +134,7 @@ function materiais() {
   const pistaLuz = tex(texPistaLuz())
   const carvalho = texReal('oak_veneer_01', 'diff')
   const TRAMA = 'poly_wool_herringbone'
-  const relevo = (id: string, forca = 1) => ({ normalMap: texReal(id, 'nor'), normalScale: new Vector2(forca, forca) })
+  const relevo = (id: string, forca = 1) => relevoReal(id, forca)
   return {
     // madeira, tecidos e areia com fotos escaneadas de verdade (Poly Haven, CC0)
     deck: std('#EADBCB', { map: carvalho, roughness: 0.65, ...relevo('oak_veneer_01', 0.5) }),
@@ -243,8 +243,9 @@ export function CenaCasamento({ qualidade }: { qualidade: Qualidade }) {
   return (
     <>
       <CeuPorDoSol />
-      {/* céu de pôr do sol de verdade (foto 360°) nos reflexos: taças, vidros, o mar */}
-      <CeuHDR arquivo="por-do-sol.hdr" intensidade={0.45} />
+      <Environment resolution={32} frames={1} environmentIntensity={0.4}>
+        <CeuPorDoSol />
+      </Environment>
       <fog attach="fog" args={['#F1B4A6', 90, 430]} />
 
       {/* luz dourada do sol se pondo + o céu rosado */}
@@ -255,7 +256,7 @@ export function CenaCasamento({ qualidade }: { qualidade: Qualidade }) {
         intensity={2.6}
         color="#FFB47A"
         castShadow
-        shadow-mapSize={qualidade === 'alta' ? [2048, 2048] : [1024, 1024]}
+        shadow-mapSize={[1024, 1024]}
         shadow-camera-left={-32}
         shadow-camera-right={32}
         shadow-camera-top={32}

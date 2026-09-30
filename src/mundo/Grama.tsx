@@ -4,7 +4,7 @@ import { altura, areaLivre, ehGramado, fbm } from './terreno'
 import { sorteador } from './util'
 import { aplicarVento } from './vento'
 
-const NIVEIS = 4 // segmentos de cada folhinha
+const NIVEIS = 3 // segmentos de cada folhinha (3 já fica curvinho e é mais leve)
 
 /** Um tufo com 3 folhinhas de grama, curvadas, escuras na base e claras na ponta. */
 export function criarTufo() {

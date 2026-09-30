@@ -5,60 +5,34 @@ import fs from 'node:fs'
 import path from 'node:path'
 import sharp from 'sharp'
 
-// id do Poly Haven → quais mapas baixar (diff = cor, nor = relevo, rough = brilho)
+// id do Poly Haven → mapas (diff = cor, nor = relevo, rough = brilho) e o tamanho de cada um.
+// Tudo pequeno de propósito: o site tem que ser leve no celular.
 const LISTA = {
-  painted_plaster_wall: ['nor', 'rough'], // paredes e teto (a cor continua a nossa)
-  laminate_floor_02: ['diff', 'nor', 'rough'], // piso de madeira clara
-  oak_veneer_01: ['diff', 'nor'], // móveis de madeira
-  poly_wool_herringbone: ['nor'], // trama dos tecidos (sofás, camas, cortinas)
-  grey_roof_tiles_02: ['diff', 'nor'], // telhado
-  brick_wall_001: ['diff', 'nor'], // tijolinho da churrasqueira
-  concrete_floor_01: ['diff', 'nor'], // piso lá fora
-  dense_sand: ['diff', 'nor'], // areia (praia, casamento, quadra, tanque de areia)
-  leafy_grass: ['diff', 'nor'], // chão do gramado (embaixo dos tufos)
+  laminate_floor_02: { diff: 1024, nor: 512 }, // piso de madeira clara (aparece grande, merece mais detalhe)
+  oak_veneer_01: { diff: 512 }, // móveis de madeira
+  poly_wool_herringbone: { nor: 512 }, // trama dos tecidos (sofás, camas, cortinas, tapetes)
+  grey_roof_tiles_02: { diff: 512 }, // telhado
+  brick_wall_001: { diff: 512 }, // tijolinho da churrasqueira
+  concrete_floor_01: { diff: 512 }, // piso lá fora
+  dense_sand: { diff: 512 }, // areia (casamento, tanque de areia)
+  leafy_grass: { diff: 512 }, // chão do gramado (embaixo dos tufos)
 }
 const CHAVES = { diff: 'Diffuse', nor: 'nor_gl', rough: 'Rough' }
-const TAM = 1024
 
 const destino = path.resolve('public/texturas')
 fs.mkdirSync(destino, { recursive: true })
 
 for (const [id, mapas] of Object.entries(LISTA)) {
   const info = await (await fetch(`https://api.polyhaven.com/files/${id}`)).json()
-  for (const m of mapas) {
+  for (const [m, TAM] of Object.entries(mapas)) {
     const arquivo = path.join(destino, `${id}_${m}.webp`)
     if (fs.existsSync(arquivo)) continue
     const url = info[CHAVES[m]]['1k'].jpg.url
     const buf = Buffer.from(await (await fetch(url)).arrayBuffer())
     await sharp(buf)
       .resize(TAM, TAM)
-      .webp({ quality: m === 'diff' ? 80 : 88 })
+      .webp({ quality: m === 'diff' ? 78 : 82 })
       .toFile(arquivo)
     console.log('✓', path.basename(arquivo), Math.round(fs.statSync(arquivo).size / 1024) + ' KB')
   }
 }
-
-// céus de verdade (HDRI): iluminam e aparecem nos reflexos (vidros, água, metais)
-const CEUS = {
-  tarde: 'kloofendal_48d_partly_cloudy_puresky', // mundo e casa
-  'por-do-sol': 'kloppenheim_06_puresky', // casamento
-}
-const pastaCeu = path.resolve('public/hdri')
-fs.mkdirSync(pastaCeu, { recursive: true })
-for (const [nome, id] of Object.entries(CEUS)) {
-  const arquivo = path.join(pastaCeu, `${nome}.hdr`)
-  if (fs.existsSync(arquivo)) continue
-  const info = await (await fetch(`https://api.polyhaven.com/files/${id}`)).json()
-  const buf = Buffer.from(await (await fetch(info.hdri['1k'].hdr.url)).arrayBuffer())
-  fs.writeFileSync(arquivo, buf)
-  console.log('✓', `${nome}.hdr`, Math.round(buf.length / 1024) + ' KB')
-}
-// (a versão 2k do céu da tarde é só pro Blender assar a luz da casa: fica fora do site)
-const ceuBlender = path.resolve('.luz/tarde_2k.hdr')
-if (!fs.existsSync(ceuBlender)) {
-  fs.mkdirSync(path.dirname(ceuBlender), { recursive: true })
-  const info = await (await fetch(`https://api.polyhaven.com/files/${CEUS.tarde}`)).json()
-  fs.writeFileSync(ceuBlender, Buffer.from(await (await fetch(info.hdri['2k'].hdr.url)).arrayBuffer()))
-  console.log('✓ .luz/tarde_2k.hdr')
-}
-

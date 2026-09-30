@@ -5,6 +5,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import sharp from 'sharp'
+import zlib from 'node:zlib'
 
 const PASTA = '.luz'
 const SAIDA = 'public/luz'
@@ -92,11 +93,16 @@ for (const andar of cena.andares) {
   console.log('✓', `${andar}.webp`, 'escala', escala.toFixed(3), Math.round(fs.statSync(path.join(SAIDA, `${andar}.webp`)).size / 1024) + ' KB')
 }
 
-// coordenadas: float → Uint16 (0..65535)
+// coordenadas: float → Uint16 (0..65535), guardando só a diferença pro vértice anterior (u com u, v com v)
+// e comprimindo (deflate): 1 MB vira uns 300 KB. O site descomprime sozinho.
 const uv = new Float32Array(fs.readFileSync(path.join(PASTA, 'uv.bin')).buffer.slice(0))
 const q = new Uint16Array(uv.length)
 for (let i = 0; i < uv.length; i++) q[i] = Math.round(Math.min(1, Math.max(0, uv[i])) * 65535)
-fs.writeFileSync(path.join(SAIDA, 'uv.bin'), Buffer.from(q.buffer))
+const delta = new Uint16Array(q.length)
+for (let i = 0; i < q.length; i++) delta[i] = (q[i] - (i >= 2 ? q[i - 2] : 0)) & 0xffff
+const comprimido = zlib.deflateRawSync(Buffer.from(delta.buffer), { level: 9 })
+fs.writeFileSync(path.join(SAIDA, 'uv.dat'), comprimido)
+if (fs.existsSync(path.join(SAIDA, 'uv.bin'))) fs.rmSync(path.join(SAIDA, 'uv.bin'))
 
 const porNome = Object.fromEntries(cena.pecas.map((p) => [p.nome, p]))
 let offset = 0
@@ -110,4 +116,4 @@ fs.writeFileSync(
   path.join(SAIDA, 'casa.json'),
   JSON.stringify({ versao: Date.now(), resolucao: RES, amostras: assado.amostras, andares, pecas }),
 )
-console.log('✓ uv.bin', Math.round(q.byteLength / 1024) + ' KB', '·', pecas.length, 'peças')
+console.log('✓ uv.dat', Math.round(comprimido.length / 1024) + ' KB', '·', pecas.length, 'peças')

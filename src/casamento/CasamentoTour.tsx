@@ -1,10 +1,9 @@
 import { PerformanceMonitor } from '@react-three/drei'
 import { Canvas } from '@react-three/fiber'
-import { Bloom, EffectComposer, HueSaturation, N8AO, ToneMapping, Vignette } from '@react-three/postprocessing'
 import { AnimatePresence, motion } from 'framer-motion'
-import { ToneMappingMode } from 'postprocessing'
 import { useState } from 'react'
 import { Carregando } from '../components/Carregando'
+import { CLASSE_CANVAS, dprInicial, ehCelular, GL_LEVE, LimiteFps, MedidorDebug, SombraCongelada, Vinheta } from '../lib/leve'
 import { CameraTour, PainelTour, type CamTour } from '../components/Tour'
 import { PASSEIO_CASAMENTO, type ParadaCasamento } from '../data/casamento'
 import { CenaCasamento, type Qualidade } from './CenaCasamento'
@@ -26,23 +25,26 @@ export default function CasamentoTour({ onSair }: { onSair: () => void }) {
   const [i, setI] = useState(0)
   const [livre, setLivre] = useState(false)
   const [pronto, setPronto] = useState(false)
-  const celular = typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches
-  const [qualidade, setQualidade] = useState<Qualidade>(celular ? 'media' : 'alta')
-  const [dpr, setDpr] = useState(() => Math.min(window.devicePixelRatio || 1, celular ? 1.5 : 2))
+  const [qualidade, setQualidade] = useState<Qualidade>(() => (ehCelular() ? 'media' : 'alta'))
+  const [dpr, setDpr] = useState(dprInicial)
 
 
   const parada = PASSEIO_CASAMENTO[i]
   const cam = CAMERAS[parada.id]
 
   return (
-    <motion.div className="fixed inset-0 z-40 bg-[#F1B4A6]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.6 }}>
+    <motion.div className={`fixed inset-0 z-40 bg-[#F1B4A6] ${CLASSE_CANVAS}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.6 }}>
       <Canvas
         shadows="percentage"
+        frameloop="never"
         dpr={dpr}
         camera={{ fov: 55, near: 0.05, far: 1200, position: [0, 20, -80] }}
-        gl={{ antialias: false, powerPreference: 'high-performance' }}
+        gl={GL_LEVE}
         onCreated={() => setTimeout(() => setPronto(true), 700)}
       >
+        <SombraCongelada />
+        <MedidorDebug />
+        <LimiteFps />
         <PerformanceMonitor
           onDecline={() => {
             setDpr((d) => Math.max(1, d - 0.5))
@@ -52,14 +54,8 @@ export default function CasamentoTour({ onSair }: { onSair: () => void }) {
         <CenaCasamento qualidade={qualidade} />
         {/* entrada de cinema: vem lá do mar até o altar */}
         <CameraTour cam={cam} livre={livre} vistaLivre={VISTA_LIVRE} distancia={[4, 80]} entrada={[0, 9, -85]} duracaoEntrada={3.2} />
-        <EffectComposer multisampling={0}>
-          <N8AO enabled={qualidade === 'alta'} aoRadius={0.8} distanceFalloff={0.6} intensity={2} quality="performance" color="#3A2418" />
-          <Bloom mipmapBlur intensity={1.0} luminanceThreshold={0.82} luminanceSmoothing={0.25} />
-          <ToneMapping mode={ToneMappingMode.NEUTRAL} />
-          <HueSaturation saturation={0.12} />
-          <Vignette offset={0.35} darkness={0.4} />
-        </EffectComposer>
       </Canvas>
+      <Vinheta forca={0.36} />
 
       <PainelTour
         paradas={PASSEIO_CASAMENTO}

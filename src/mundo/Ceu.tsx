@@ -78,13 +78,13 @@ export function Nuvens({ poucas = false }: { poucas?: boolean }) {
     { pos: [-120, 30, -40], seed: 8, bounds: [22, 5, 6], volume: 15 },
   ]
   return (
-    <Clouds material={MeshLambertMaterial} texture={textura} limit={poucas ? 160 : 320}>
+    <Clouds material={MeshLambertMaterial} texture={textura} limit={poucas ? 64 : 110}>
       {nuvens.map((n) => (
         <Cloud
           key={n.seed}
           position={n.pos}
           seed={n.seed}
-          segments={poucas ? 16 : 30}
+          segments={poucas ? 7 : 12}
           bounds={n.bounds}
           volume={n.volume}
           growth={4}

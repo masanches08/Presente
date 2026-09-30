@@ -1,6 +1,6 @@
 import { useFrame } from '@react-three/fiber'
 import { Suspense, useEffect, useLayoutEffect, useMemo, useRef } from 'react'
-import { useGLTF } from '@react-three/drei'
+import { Environment, useGLTF } from '@react-three/drei'
 import {
   Box3,
   Color,
@@ -12,15 +12,13 @@ import {
   Vector3,
   type DirectionalLight,
   type Material,
-  Vector2,
   type BufferGeometry,
   type Mesh,
 } from 'three'
 import { CONFIG } from '../config'
-import { texReal } from '../lib/texturasReais'
+import { relevoReal, texReal } from '../lib/texturasReais'
 import { Arbusto, Arvore, Cipreste } from '../mundo/Arvore'
 import { Ceu, Nuvens } from '../mundo/Ceu'
-import { CeuHDR } from '../mundo/CeuHDR'
 import { criarTufo } from '../mundo/Grama'
 import { texJuta } from '../mundo/texturas'
 import { sorteador } from '../mundo/util'
@@ -71,7 +69,7 @@ function Andar3D({ nome: andar, geo, oculto, luz }: { nome: string; geo: GeoAnda
     geo.tapetes.forEach((t, i) => {
       // a trama de tecido de verdade (foto escaneada) por cima do desenho de cada tapete
       const d = t.tipo === 'redondo' || t.tipo === 'infantil' ? t.w : t.d
-      const trama = { normalMap: texReal('poly_wool_herringbone', 'nor', [t.w / 0.27, d / 0.27]), normalScale: new Vector2(1.2, 1.2) }
+      const trama = relevoReal('poly_wool_herringbone', 1.2, [t.w / 0.27, d / 0.27])
       if (t.tipo === 'listrado') m['tapete' + i] = new MeshStandardMaterial({ map: texTapeteListrado(), roughness: 1, ...trama })
       else if (t.tipo === 'persa') m['tapete' + i] = new MeshStandardMaterial({ map: texTapetePersa(), roughness: 1, ...trama })
       else if (t.tipo === 'infantil') m['tapete' + i] = new MeshStandardMaterial({ map: texTapeteInfantil(t.cores ?? ['#FFFFFF']), alphaTest: 0.5, roughness: 1, ...trama })
@@ -286,17 +284,17 @@ function Quintal({ qualidade }: { qualidade: Qualidade }) {
       <mesh rotation-x={-Math.PI / 2} position-y={-0.04} receiveShadow>
         <planeGeometry args={[420, 420]} />
         {/* chão de grama de verdade (foto escaneada, puxada pro verde), repetindo a cada 2 m */}
-        <meshStandardMaterial color={VERDE_GRAMADO} map={texReal('leafy_grass', 'diff', 210)} normalMap={texReal('leafy_grass', 'nor', 210)} roughness={0.95} />
+        <meshStandardMaterial color={VERDE_GRAMADO} map={texReal('leafy_grass', 'diff', 210)} roughness={0.95} />
       </mesh>
       {/* os 5 pezinhos marcados no cimento */}
       <mesh rotation-x={-Math.PI / 2} position={[0, 0.043, LAJE_PEGADAS.z]} receiveShadow>
         <planeGeometry args={[LAJE_PEGADAS.w, LAJE_PEGADAS.d]} />
         <meshStandardMaterial map={pegadas} roughness={0.9} />
       </mesh>
-      <GramaLote quantidade={qualidade === 'alta' ? 44000 : 22000} />
+      <GramaLote quantidade={qualidade === 'alta' ? 14000 : 8000} />
       <Agua />
       {arvores.map(([x, z, alt, s]) => (
-        <Arvore key={s} semente={s} altura={alt} position={[x, 0, z]} rotation-y={s} cartoes={qualidade === 'alta' ? 70 : 50} />
+        <Arvore key={s} semente={s} altura={alt} position={[x, 0, z]} rotation-y={s} cartoes={qualidade === 'alta' ? 45 : 32} />
       ))}
       {/* a árvore da casinha */}
       {/* ao lado da casinha (e bem alta): os galhos passam por cima do telhado */}
@@ -376,7 +374,9 @@ export function CenaCasa({ ocultos, qualidade, foco, amplo, luzes }: CenaProps) 
     <>
       <Ceu />
       {/* céu de verdade (foto 360°) nos reflexos dos vidros, da água e dos metais */}
-      <CeuHDR arquivo="tarde.hdr" intensidade={0.35} />
+      <Environment resolution={32} frames={1} environmentIntensity={0.3}>
+        <Ceu />
+      </Environment>
       <fog attach="fog" args={['#DCEBF4', 70, 320]} />
       <hemisphereLight args={['#FFF3E2', '#E9D6B6', 0.8]} />
       <ambientLight color="#FFE6C4" intensity={0.18} />
@@ -385,7 +385,7 @@ export function CenaCasa({ ocultos, qualidade, foco, amplo, luzes }: CenaProps) 
         intensity={3.8}
         color="#FFE2B4"
         castShadow
-        shadow-mapSize={qualidade === 'alta' ? [2048, 2048] : [1024, 1024]}
+        shadow-mapSize={[1024, 1024]}
         shadow-bias={-0.0004}
         shadow-normalBias={0.03}
       />

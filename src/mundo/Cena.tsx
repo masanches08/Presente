@@ -1,10 +1,10 @@
+import { Environment } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import { Suspense, useLayoutEffect, useMemo, useRef } from 'react'
 import type { DirectionalLight, Group, Mesh } from 'three'
 import { Lanternas, Vagalumes } from './Ambiente'
 import { Arvore } from './Arvore'
 import { Ceu, Nuvens } from './Ceu'
-import { CeuHDR } from './CeuHDR'
 import { DIRECAO_LUZ } from './cores'
 import { Borboletas, Flores } from './Flores'
 import { Grama } from './Grama'
@@ -29,9 +29,9 @@ export type Qualidade = 'alta' | 'media' | 'baixa'
 // Quanta coisa desenhar em cada nível de qualidade
 // (bem mais econômico que antes: o celular agradece)
 const QTD = {
-  alta: { grama: 48000, flores: 2600, arvoresLonge: 18, sombra: 2048, chao: 200 },
-  media: { grama: 26000, flores: 1600, arvoresLonge: 12, sombra: 1024, chao: 150 },
-  baixa: { grama: 13000, flores: 900, arvoresLonge: 8, sombra: 1024, chao: 110 },
+  alta: { grama: 22000, flores: 1300, arvoresLonge: 12, sombra: 1024, chao: 140 },
+  media: { grama: 13000, flores: 800, arvoresLonge: 9, sombra: 1024, chao: 110 },
+  baixa: { grama: 7000, flores: 450, arvoresLonge: 6, sombra: 512, chao: 80 },
 }
 
 interface Props {
@@ -106,8 +106,10 @@ export function Cena({ onFocar, nossoDia, qualidade }: Props) {
     <>
       <Ceu />
       {/* reflexos (vidros, mar, metais) vêm desse mesmo céu */}
-      {/* céu de verdade (foto 360°) nos reflexos e na luz ambiente */}
-      <CeuHDR arquivo="tarde.hdr" intensidade={0.55} />
+      {/* reflexos (vidros, mar, metais) vêm desse mesmo céu */}
+      <Environment resolution={32} frames={1} environmentIntensity={0.6}>
+        <Ceu />
+      </Environment>
       <fog attach="fog" args={['#DCEBF4', 50, 260]} />
 
       {/* luz do fim de tarde */}

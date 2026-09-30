@@ -90,9 +90,9 @@ export function NuvensPorDoSol({ poucas }: { poucas: boolean }) {
     [-20, 70, -140, 6],
   ]
   return (
-    <Clouds material={MeshBasicMaterial} texture={textura} limit={poucas ? 120 : 240}>
+    <Clouds material={MeshBasicMaterial} texture={textura} limit={poucas ? 60 : 110}>
       {nuvens.map(([x, y, z, seed]) => (
-        <Cloud key={seed} position={[x, y, z]} seed={seed} segments={poucas ? 14 : 26} bounds={[34, 4, 8]} volume={22} growth={5} speed={0.05} opacity={0.55} color="#FFD6C4" />
+        <Cloud key={seed} position={[x, y, z]} seed={seed} segments={poucas ? 7 : 12} bounds={[34, 4, 8]} volume={22} growth={5} speed={0.05} opacity={0.55} color="#FFD6C4" />
       ))}
     </Clouds>
   )
@@ -186,7 +186,7 @@ export function Areia() {
   return (
     <>
       <mesh geometry={geo} receiveShadow>
-        <meshStandardMaterial color={AREIA} map={texReal('dense_sand', 'diff', rep)} normalMap={texReal('dense_sand', 'nor', rep)} roughness={1} />
+        <meshStandardMaterial color={AREIA} map={texReal('dense_sand', 'diff', rep)} roughness={1} />
       </mesh>
       {/* costões verdes dos dois lados da baía */}
       {[

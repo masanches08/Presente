@@ -3,7 +3,6 @@ import { useMemo } from 'react'
 import { Color, Float32BufferAttribute, PlaneGeometry, ShaderMaterial } from 'three'
 import { DIRECAO_SOL } from './cores'
 import { altura, ehGramado, fatorCosta, fbm, NIVEL_MAR } from './terreno'
-import { texReal } from '../lib/texturasReais'
 import { texChao } from './texturas'
 
 const TAMANHO = 320
@@ -54,8 +53,7 @@ export function Chao({ detalhe = 220 }: { detalhe?: number }) {
 
   return (
     <mesh geometry={geo} receiveShadow>
-      {/* relevo de areia de verdade (na grama quase não aparece, some embaixo dos tufos) */}
-      <meshStandardMaterial vertexColors map={detalheChao} normalMap={texReal('dense_sand', 'nor', TAMANHO / 1.8)} normalScale={[0.8, 0.8]} roughness={0.95} />
+      <meshStandardMaterial vertexColors map={detalheChao} roughness={0.95} />
     </mesh>
   )
 }

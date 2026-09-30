@@ -7,11 +7,11 @@ import path from 'node:path'
 
 // id do Poly Haven → [nome no site, quanto simplificar a malha (1 = nada), tamanho máx. da textura]
 const LISTA = {
-  potted_plant_01: ['planta-arvore', 0.35, 1024], // planta grande num vaso de barro (sala)
-  potted_plant_02: ['planta-costela', 0.45, 1024], // folhas grandes num vaso de barro (hall)
-  potted_plant_04: ['suculenta', 1, 512], // suculenta num vasinho branco (em cima dos móveis)
-  ceramic_vase_01: ['vaso-branco', 1, 512], // vaso de cerâmica branco
-  ceramic_vase_03: ['vaso-alto', 1, 512], // vaso de cerâmica alto
+  potted_plant_01: ['planta-arvore', 0.18, 512], // planta grande num vaso de barro (sala, suíte)
+  potted_plant_02: ['planta-costela', 0.3, 512], // folhas grandes num vaso de barro (hall)
+  potted_plant_04: ['suculenta', 0.5, 256], // suculenta num vasinho branco (em cima dos móveis)
+  ceramic_vase_01: ['vaso-branco', 0.6, 256], // vaso de cerâmica branco
+  ceramic_vase_03: ['vaso-alto', 0.6, 256], // vaso de cerâmica alto
 }
 
 const tmp = path.resolve('.modelos')
@@ -38,7 +38,7 @@ for (const [id, [nome, simplificar, textura]] of Object.entries(LISTA)) {
   const entrada = path.join(pasta, `${id}.gltf`)
   const passo = path.join(pasta, `${id}.passo.glb`)
   const args = ['optimize', entrada, passo, '--compress', 'meshopt', '--texture-compress', 'webp', '--texture-size', String(textura)]
-  if (simplificar < 1) args.push('--simplify', 'true', '--simplify-ratio', String(simplificar), '--simplify-error', '0.002')
+  if (simplificar < 1) args.push('--simplify', 'true', '--simplify-ratio', String(simplificar), '--simplify-error', '0.01')
   else args.push('--simplify', 'false')
   execFileSync(process.execPath, [...cli, ...args], { stdio: 'inherit' })
   fs.copyFileSync(passo, final)

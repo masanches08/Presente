@@ -74,12 +74,22 @@ A luz de dentro da casa (sol entrando pelas janelas, luz rebatendo nas paredes, 
 - **Sempre que mudar a casa** (paredes, móveis em `src/casa/`), rode `npm run luz` (uns 30 min, precisa do Blender instalado). Se esquecer, nada quebra: as peças que mudaram só voltam pra luz normal.
 - Rascunho rápido pra testar: `npm run luz -- 2048 16`
 - Os passos ficam em `scripts/luz/`: `exportar.ts` (casa → Blender), `assar.py` (calcula a luz), `limpar.py` (tira o chuvisco), `finalizar.mjs` (gera os arquivos do site)
-- Brilho geral: `EXPOSICAO` em `src/casa/luzAssada.ts`
+- Brilho geral: `EXPOSICAO` em `src/casa/luzAssada.ts`; `LUZ_MINIMA` garante que nenhum canto fica preto
 
-## Céus e modelos de verdade
+## Modelos de verdade
 
-- `public/hdri/`: céus em foto 360° (Poly Haven, CC0) que iluminam e aparecem nos reflexos (`src/mundo/CeuHDR.tsx`)
-- `public/modelos/`: plantas e vasos escaneados (Poly Haven, CC0), baixados e comprimidos por `node scripts/baixar-modelos.mjs`. Na casa, são posicionados com `modelo(...)` em `src/casa/decoracao.ts`
+- `public/modelos/`: plantas e vasos escaneados (Poly Haven, CC0), baixados e comprimidos (malha simplificada, texturas pequenas) por `node scripts/baixar-modelos.mjs`. Na casa, são posicionados com `modelo(...)` em `src/casa/decoracao.ts`
+
+## Leve de propósito (`src/lib/leve.tsx`)
+
+O site tem que rodar liso no celular dela, então:
+- **Sem pós-processamento**: a cor viva e as bordas escurecidas são feitas pelo navegador (CSS), não pelo 3D
+- **Resolução contida**: no máximo 1,25x no celular e 1,5x no computador (baixa sozinha se o aparelho sofrer)
+- **30 quadros por segundo no celular** (60 no computador): fica suave e esquenta bem menos
+- **Sombra congelada**: o sol não se mexe, então a sombra só é redesenhada quando a câmera muda de cômodo
+- **Texturas pequenas** (`public/texturas`, ~0,4 MB no total) e **luz da casa já calculada** (`public/luz`, ~0,6 MB)
+- A tela da lua de mel usa uma **foto** do cenário 3D desfocada (`public/luademel/fundo.webp`), sem 3D rodando
+- Pra medir: abra com `?debug` e rode `__gl.at(-1).info.render` no console (desenhos e triângulos por quadro)
 
 ## A casa por dentro (`src/casa/`)
 

@@ -20,7 +20,9 @@ export interface LuzAssada {
 }
 
 /** Brilho geral da luz assada (1 = igual ao Blender) */
-const EXPOSICAO = 2.6
+const EXPOSICAO = 3.4
+/** Luz mínima em qualquer canto (pra nada ficar preto) */
+const LUZ_MINIMA = 0.42
 
 let promessa: Promise<LuzAssada | null> | null = null
 function carregar() {
@@ -28,8 +30,11 @@ function carregar() {
     try {
       const base = import.meta.env.BASE_URL
       const info = (await (await fetch(`${base}luz/casa.json`)).json()) as InfoLuz
-      const bin = await (await fetch(`${base}luz/uv.bin?v=${info.versao}`)).arrayBuffer()
+      // as coordenadas vêm comprimidas (deflate) e guardadas como "diferença pro anterior"
+      const resp = await fetch(`${base}luz/uv.dat?v=${info.versao}`)
+      const bin = await new Response(resp.body!.pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer()
       const todos = new Uint16Array(bin)
+      for (let i = 2; i < todos.length; i++) todos[i] = (todos[i] + todos[i - 2]) & 0xffff
       const uv = new Map(info.pecas.map((p) => [p.nome, todos.subarray(p.offset * 2, (p.offset + p.count) * 2)]))
       const loader = new TextureLoader()
       const mapas: LuzAssada['mapas'] = {}
@@ -92,6 +97,8 @@ export function usarLuz(m: Material, mapa: { textura: Texture; intensidade: numb
       reflectedLight.directDiffuse = vec3(0.0);
       irradiance = vec3(0.0);
       #include <lights_fragment_maps>
+      // luz mínima de preenchimento: nenhum canto da casa fica preto (luz de casa acesa, dia claro)
+      irradiance = irradiance + vec3(${LUZ_MINIMA.toFixed(3)});
       iblIrradiance = vec3(0.0);
       // dentro de casa o chão não reflete o céu inteiro: onde a luz assada é fraca, o reflexo também é
       radiance *= clamp(dot(irradiance, vec3(0.2126, 0.7152, 0.0722)) * 0.22, 0.0, 1.0);

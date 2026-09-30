@@ -1,10 +1,9 @@
 import { PerformanceMonitor, useCursor } from '@react-three/drei'
 import { Canvas } from '@react-three/fiber'
-import { Bloom, EffectComposer, HueSaturation, N8AO, ToneMapping, Vignette } from '@react-three/postprocessing'
 import { AnimatePresence, motion } from 'framer-motion'
-import { ToneMappingMode } from 'postprocessing'
 import { useCallback, useState } from 'react'
 import { Carregando } from '../components/Carregando'
+import { CLASSE_CANVAS, dprInicial, ehCelular, GL_LEVE, LimiteFps, MedidorDebug, SombraCongelada, Vinheta } from '../lib/leve'
 import { CameraTour, PainelTour } from '../components/Tour'
 import { TOUR, type ParadaId } from '../data/tour'
 import { CenaCasa, type Qualidade } from './CenaCasa'
@@ -44,9 +43,8 @@ export default function CasaTour({ onSair }: { onSair: () => void }) {
   const [andar, setAndar] = useState<Andar>('tudo')
   const [piscando, setPiscando] = useState(false)
   const [pronto, setPronto] = useState(false)
-  const celular = typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches
-  const [qualidade, setQualidade] = useState<Qualidade>(celular ? 'media' : 'alta')
-  const [dpr, setDpr] = useState(() => Math.min(window.devicePixelRatio || 1, celular ? 1.5 : 2))
+  const [qualidade, setQualidade] = useState<Qualidade>(() => (ehCelular() ? 'media' : 'alta'))
+  const [dpr, setDpr] = useState(dprInicial)
   const piscar = useCallback((v: boolean) => setPiscando(v), [])
 
   const parada = TOUR[i]
@@ -54,14 +52,19 @@ export default function CasaTour({ onSair }: { onSair: () => void }) {
   const ocultos = livre ? { superior: andar === 'terreo', teto: andar !== 'tudo' } : { superior: false, teto: false }
 
   return (
-    <motion.div className="fixed inset-0 z-40 bg-[#DCEBF4]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.6 }}>
+    <motion.div className={`fixed inset-0 z-40 bg-[#DCEBF4] ${CLASSE_CANVAS}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.6 }}>
       <Canvas
         shadows="percentage"
+        frameloop="never"
         dpr={dpr}
         camera={{ fov: 55, near: 0.05, far: 900, position: [30, 25, 45] }}
-        gl={{ antialias: false, powerPreference: 'high-performance' }}
+        gl={GL_LEVE}
         onCreated={() => setTimeout(() => setPronto(true), 700)}
       >
+        {/* a sombra do sol muda de lugar a cada cômodo: redesenha só nessa hora */}
+        <SombraCongelada chave={`${cam.alvo.join()}${livre}`} />
+        <MedidorDebug />
+        <LimiteFps />
         <PerformanceMonitor
           onDecline={() => {
             setDpr((d) => Math.max(1, d - 0.5))
@@ -79,15 +82,8 @@ export default function CasaTour({ onSair }: { onSair: () => void }) {
             }}
           />
         )}
-        <EffectComposer multisampling={0}>
-          {/* sombra de contato nos cantos e embaixo dos móveis: é o que dá noção de espaço e profundidade */}
-          <N8AO aoRadius={0.9} distanceFalloff={0.6} intensity={qualidade === 'alta' ? 2.6 : 2.2} quality={qualidade === 'alta' ? 'medium' : 'performance'} halfRes={qualidade !== 'alta'} color="#2A1E14" />
-          <Bloom mipmapBlur intensity={0.5} luminanceThreshold={0.95} luminanceSmoothing={0.2} />
-          <ToneMapping mode={ToneMappingMode.NEUTRAL} />
-          <HueSaturation saturation={0.1} />
-          <Vignette offset={0.4} darkness={0.3} />
-        </EffectComposer>
       </Canvas>
+      <Vinheta forca={0.3} />
 
       {/* "piscar" entre cômodos */}
       <div className={`pointer-events-none fixed inset-0 bg-creme transition-opacity duration-400 ${piscando ? 'opacity-100' : 'opacity-0'}`} />
