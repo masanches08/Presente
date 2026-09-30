@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "fotos": "node scripts/converter-fotos.mjs"
+    "fotos": "node scripts/converter-fotos.mjs",
+    "luz": "node scripts/luz/rodar.mjs"
   },
   "dependencies": {
     "@date-fns/tz": "^1.5.0",
@@ -27,6 +28,7 @@
     "three": "^0.186.1"
   },
   "devDependencies": {
+    "@gltf-transform/cli": "^4.5.1",
     "@tailwindcss/vite": "^4.3.3",
     "@types/node": "^24.13.3",
     "@types/react": "^19.2.18",
@@ -36,6 +38,7 @@
     "oxlint": "^1.81.0",
     "sharp": "^0.35.5",
     "tailwindcss": "^4.3.3",
+    "tsx": "^4.23.15",
     "typescript": "~6.0.2",
     "vite": "^8.3.0",
     "vitest": "^5.0.2"

@@ -420,5 +420,5 @@ export function montarExterior(a: Andar) {
 }
 
 export function novoAndar(y: number): Andar {
-  return { o: new Obra(), y, tufos: [], arranjos: [], tapetes: [], quadros: [] }
+  return { o: new Obra(), y, tufos: [], arranjos: [], tapetes: [], quadros: [], modelos: [] }
 }

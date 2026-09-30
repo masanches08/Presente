@@ -67,6 +67,20 @@ Atrás dela fica, desfocado, o cenário 3D das casinhas sobre o mar (`src/luadem
 Fotos escaneadas do [Poly Haven](https://polyhaven.com) (licença CC0, uso livre): reboco, piso de madeira, carvalho, trama de tecido, telhado, tijolo, concreto, areia e grama.
 Pra trocar ou adicionar: edite a lista em `scripts/baixar-texturas.mjs` e rode `node scripts/baixar-texturas.mjs` (baixa em 1k e converte pra `.webp`). No código, `texReal(id, 'diff' | 'nor' | 'rough')` em `src/lib/texturasReais.ts`.
 
+## Luz "assada" da casa (Blender)
+
+A luz de dentro da casa (sol entrando pelas janelas, luz rebatendo nas paredes, cantos mais escuros, abajures acesos) é calculada no **Blender** e guardada em imagens (`public/luz/`). O site só aplica essas imagens, então fica leve e realista.
+
+- **Sempre que mudar a casa** (paredes, móveis em `src/casa/`), rode `npm run luz` (uns 30 min, precisa do Blender instalado). Se esquecer, nada quebra: as peças que mudaram só voltam pra luz normal.
+- Rascunho rápido pra testar: `npm run luz -- 2048 16`
+- Os passos ficam em `scripts/luz/`: `exportar.ts` (casa → Blender), `assar.py` (calcula a luz), `limpar.py` (tira o chuvisco), `finalizar.mjs` (gera os arquivos do site)
+- Brilho geral: `EXPOSICAO` em `src/casa/luzAssada.ts`
+
+## Céus e modelos de verdade
+
+- `public/hdri/`: céus em foto 360° (Poly Haven, CC0) que iluminam e aparecem nos reflexos (`src/mundo/CeuHDR.tsx`)
+- `public/modelos/`: plantas e vasos escaneados (Poly Haven, CC0), baixados e comprimidos por `node scripts/baixar-modelos.mjs`. Na casa, são posicionados com `modelo(...)` em `src/casa/decoracao.ts`
+
 ## A casa por dentro (`src/casa/`)
 
 - `construcao.ts`: a planta (paredes, portas, janelas, escada, mezanino, telhado)

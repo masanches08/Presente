@@ -37,3 +37,28 @@ for (const [id, mapas] of Object.entries(LISTA)) {
     console.log('✓', path.basename(arquivo), Math.round(fs.statSync(arquivo).size / 1024) + ' KB')
   }
 }
+
+// céus de verdade (HDRI): iluminam e aparecem nos reflexos (vidros, água, metais)
+const CEUS = {
+  tarde: 'kloofendal_48d_partly_cloudy_puresky', // mundo e casa
+  'por-do-sol': 'kloppenheim_06_puresky', // casamento
+}
+const pastaCeu = path.resolve('public/hdri')
+fs.mkdirSync(pastaCeu, { recursive: true })
+for (const [nome, id] of Object.entries(CEUS)) {
+  const arquivo = path.join(pastaCeu, `${nome}.hdr`)
+  if (fs.existsSync(arquivo)) continue
+  const info = await (await fetch(`https://api.polyhaven.com/files/${id}`)).json()
+  const buf = Buffer.from(await (await fetch(info.hdri['1k'].hdr.url)).arrayBuffer())
+  fs.writeFileSync(arquivo, buf)
+  console.log('✓', `${nome}.hdr`, Math.round(buf.length / 1024) + ' KB')
+}
+// (a versão 2k do céu da tarde é só pro Blender assar a luz da casa: fica fora do site)
+const ceuBlender = path.resolve('.luz/tarde_2k.hdr')
+if (!fs.existsSync(ceuBlender)) {
+  fs.mkdirSync(path.dirname(ceuBlender), { recursive: true })
+  const info = await (await fetch(`https://api.polyhaven.com/files/${CEUS.tarde}`)).json()
+  fs.writeFileSync(ceuBlender, Buffer.from(await (await fetch(info.hdri['2k'].hdr.url)).arrayBuffer()))
+  console.log('✓ .luz/tarde_2k.hdr')
+}
+

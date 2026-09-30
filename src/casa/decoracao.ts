@@ -31,7 +31,7 @@ import {
   mesaLateral,
   mesaRedonda,
   pendente,
-  planta,
+  modelo,
   poltrona,
   pufe,
   sinuca,
@@ -65,7 +65,7 @@ export function decorarTerreo(a: Andar) {
   const espelho = em(a, [3.93, 0, 5.4], N_X)
   espelho.disco('espelho', 0, 1.75, 0, 0.45, 0.015)
   espelho.aro('latao', 0, 1.75, 0.005, 0.45, 0.02)
-  planta(a, -2.25, 3.0, 'palmeira', 1.35)
+  modelo(a, 'planta-costela', -2.25, 3.0, 1.35, 0.6)
 
   // ---------- sala (pé-direito duplo) ----------
   a.tapetes.push({ pos: [0.9, 0.006, 0.7], w: 3.6, d: 4.2, giro: 0, tipo: 'juta' })
@@ -79,9 +79,10 @@ export function decorarTerreo(a: Andar) {
   centro.cil('luz', 0.25, 0.42, 0.52, 0.2, 0.035)
   const lat = em(a, [-1.55, y, 2.45])
   mesaLateral(lat)
+  lat.modelo('suculenta', 0.1, 0.55, -0.08, 0.2)
   abajur(lat, 0.55)
   luminariaPe(em(a, [-2.45, y, -1.9]))
-  planta(a, 3.45, 3.35, 'ficus', 1.1)
+  modelo(a, 'planta-arvore', 3.45, 3.35, 1.85, 2.2)
   pendente(em(a, [0.6, 4.7, 0.9]), 0, Y2 - 4.7, 0.36)
   // cortinas de linho do chão até lá em cima, emoldurando o janelão
   const frente = em(a, [0, y, 6.86], N_Z)
@@ -103,6 +104,8 @@ export function decorarTerreo(a: Andar) {
   pendente(em(a, [0, 2.3, -7]), 0, TETO1 - 2.3, 0.3)
   const buffet = em(a, [-3.72, y, -7], P_X)
   aparador(buffet, 1.8)
+  buffet.modelo('vaso-alto', -0.5, 0.82, 0, 0.42)
+  buffet.modelo('suculenta', 0.2, 0.82, 0.02, 0.22, 1)
   abajur(em(a, [-3.72, 0.82, -7.55], P_X), 0)
   a.quadros.push({ pos: [-3.93, 1.75, -6.8], w: 0.6, h: 0.8, giro: P_X, variante: 1 })
 
@@ -225,6 +228,7 @@ export function decorarSuperior(a: Andar) {
   // penteadeira embaixo da janela lateral
   const pent = em(a, [4.72, y, -10.4], N_X)
   aparador(pent, 1.5, 0.78, 0.42)
+  pent.modelo('vaso-branco', -0.45, 0.78, 0.02, 0.3)
   abajur(em(a, [4.72, 0.78 + y, -10.95], N_X), 0)
   const espelhoPent = em(a, [4.98, y, -10.3], N_X)
   espelhoPent.disco('espelho', 0, 1.65, 0, 0.42, 0.015)
@@ -239,7 +243,7 @@ export function decorarSuperior(a: Andar) {
   cadeira(em(a, [-1.1, y, -17.2], N_Z + 0.35), 'tecidoCreme')
   cadeira(em(a, [1.1, y, -17.2], N_Z - 0.35), 'tecidoCreme')
   mesaRedonda(em(a, [0, y, -17.35]), 0.3, 0.55)
-  planta(a, -2.9, -17.6, 'oliveira', 0.9, 'vaso')
+  modelo(a, 'planta-arvore', -2.9, -17.6, 1.6, 4.1)
 
   // banheiro do casal: duas cubas, chuveiro amplo e mármore
   a.o.caixa('marmore', [-3.95, -0.3], [y, y + 1.25], [-5.08, -5.065])

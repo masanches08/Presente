@@ -1,10 +1,10 @@
-import { Environment } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import { Suspense, useLayoutEffect, useMemo, useRef } from 'react'
 import type { DirectionalLight, Group, Mesh } from 'three'
 import { Lanternas, Vagalumes } from './Ambiente'
 import { Arvore } from './Arvore'
 import { Ceu, Nuvens } from './Ceu'
+import { CeuHDR } from './CeuHDR'
 import { DIRECAO_LUZ } from './cores'
 import { Borboletas, Flores } from './Flores'
 import { Grama } from './Grama'
@@ -106,9 +106,8 @@ export function Cena({ onFocar, nossoDia, qualidade }: Props) {
     <>
       <Ceu />
       {/* reflexos (vidros, mar, metais) vêm desse mesmo céu */}
-      <Environment resolution={64} frames={1} environmentIntensity={0.6}>
-        <Ceu />
-      </Environment>
+      {/* céu de verdade (foto 360°) nos reflexos e na luz ambiente */}
+      <CeuHDR arquivo="tarde.hdr" intensidade={0.55} />
       <fog attach="fog" args={['#DCEBF4', 50, 260]} />
 
       {/* luz do fim de tarde */}

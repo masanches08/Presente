@@ -1,10 +1,11 @@
+import { CircleGeometry, PlaneGeometry } from 'three'
 import { criarArranjos } from '../mundo/arranjos'
 import { criarFolhagem } from '../mundo/Arvore'
 import { montarEstrutura, Y1, Y2 } from './construcao'
 import { decorarSuperior, decorarTerreo } from './decoracao'
 import { montarExterior, novoAndar } from './exterior'
 import { ESCALAS } from './materiais'
-import { em, type Andar } from './moveis'
+import { em, type Andar, type Tapete } from './moveis'
 
 const VERDES_VASO: [string, string, string] = ['#2F6B2A', '#4E9A3A', '#9CCD66']
 
@@ -18,6 +19,7 @@ function finalizar(a: Andar, semente: number) {
     arranjos: a.arranjos.length ? criarArranjos(a.arranjos, semente + 1) : null,
     tapetes: a.tapetes,
     quadros: a.quadros,
+    modelos: a.modelos,
   }
 }
 export type GeoAndar = ReturnType<typeof finalizar>
@@ -38,4 +40,13 @@ export function montarCasa() {
     teto: finalizar(teto, 33),
     fora: finalizar(fora, 44),
   }
+}
+
+/** A geometria de um tapete (a mesma no site e no Blender, pra luz assada bater certinho) */
+export function geoTapete(t: Tapete) {
+  const g = t.tipo === 'redondo' || t.tipo === 'infantil' ? new CircleGeometry(t.w / 2, 48) : new PlaneGeometry(t.w, t.d)
+  g.rotateX(-Math.PI / 2)
+  g.rotateY(t.giro)
+  g.translate(...t.pos)
+  return g
 }

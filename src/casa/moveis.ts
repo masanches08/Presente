@@ -33,6 +33,21 @@ export interface Andar {
   arranjos: Arranjo[]
   tapetes: Tapete[]
   quadros: Quadro[]
+  modelos: Modelo[]
+}
+
+/** Um modelo 3D escaneado de verdade (public/modelos/<arquivo>.glb), em pé no lugar certo */
+export interface Modelo {
+  arquivo: string
+  pos: V3
+  giro: number
+  /** altura final (m): o modelo é escalado pra ficar desse tamanho */
+  altura: number
+}
+
+/** Põe um modelo escaneado no chão do andar (posição no mundo) */
+export function modelo(a: Andar, arquivo: string, x: number, z: number, altura: number, giro = 0) {
+  a.modelos.push({ arquivo, pos: [x, a.y, z], giro, altura })
 }
 
 // Estofados (tecidos) ganham cantos arredondados: é o que tira a cara de "caixa pintada"
@@ -117,6 +132,11 @@ export class L {
   }
   flores(x: number, y: number, z: number, raio: number, flores = 16) {
     this.a.arranjos.push({ centro: this.mundo(x, y, z), raio, flores })
+  }
+  /** modelo escaneado em cima de um móvel (coordenadas locais) */
+  modelo(arquivo: string, x: number, y: number, z: number, altura: number, giro = 0) {
+    const p = this.mundo(x, y, z)
+    this.a.modelos.push({ arquivo, pos: [p.x, p.y, p.z], giro: this.g + giro, altura })
   }
   plantinha(x: number, y: number, z: number, r = 0.14) {
     this.cil('vaso', x, y, y + 0.14, z, 0.08, 0.1)

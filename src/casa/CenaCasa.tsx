@@ -1,43 +1,70 @@
-import { Environment } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
-import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
+import { Suspense, useEffect, useLayoutEffect, useMemo, useRef } from 'react'
+import { useGLTF } from '@react-three/drei'
 import {
-  CircleGeometry,
+  Box3,
   Color,
   DoubleSide,
   InstancedMesh,
   MeshStandardMaterial,
   Object3D,
-  PlaneGeometry,
   ShaderMaterial,
   Vector3,
   type DirectionalLight,
   type Material,
   Vector2,
+  type BufferGeometry,
+  type Mesh,
 } from 'three'
 import { CONFIG } from '../config'
 import { texReal } from '../lib/texturasReais'
 import { Arbusto, Arvore, Cipreste } from '../mundo/Arvore'
 import { Ceu, Nuvens } from '../mundo/Ceu'
+import { CeuHDR } from '../mundo/CeuHDR'
 import { criarTufo } from '../mundo/Grama'
 import { texJuta } from '../mundo/texturas'
 import { sorteador } from '../mundo/util'
 import { aplicarVento, vento } from '../mundo/vento'
+import type { Modelo } from './moveis'
 import { CASA_ARVORE, LAJE_PEGADAS, LOTE, PISCINA, REDE, semGrama, SPA } from './exterior'
-import { montarCasa, type GeoAndar } from './geometria'
+import { geoTapete, montarCasa, type GeoAndar } from './geometria'
+import { comLuz, SOL_CASA, useLuzAssada, usarLuz, type LuzAssada } from './luzAssada'
 import { criarMateriais, ocultar } from './materiais'
 import { texPegadas, texQuadro, texTapeteListrado, texTapetePersa, texTapeteRedondo } from './texturas'
 import { texDesenho, texTapeteInfantil } from './texturasInfantis'
 
 export type Qualidade = 'alta' | 'media'
 
-/** Sol de fim de tarde vindo da frente e da direita (entra pelos janelões) */
-const SOL = new Vector3(0.5, 0.6, 0.62).normalize()
+const SOL = SOL_CASA
 
 const SEM_SOMBRA = new Set(['vidro', 'luz', 'cupula', 'voil'])
 
+/** Um modelo escaneado de verdade (plantas, vasos…), escalado pra altura certa e apoiado no chão/móvel */
+function ModeloGLB({ m }: { m: Modelo }) {
+  const { scene } = useGLTF(`${import.meta.env.BASE_URL}modelos/${m.arquivo}.glb`)
+  const obj = useMemo(() => {
+    const c = scene.clone(true)
+    const caixa = new Box3().setFromObject(c)
+    const s = m.altura / Math.max(0.001, caixa.max.y - caixa.min.y)
+    c.scale.setScalar(s)
+    c.position.set((-(caixa.min.x + caixa.max.x) / 2) * s, -caixa.min.y * s, (-(caixa.min.z + caixa.max.z) / 2) * s)
+    c.traverse((o) => {
+      if ((o as Mesh).isMesh) {
+        o.castShadow = true
+        o.receiveShadow = true
+      }
+    })
+    return c
+  }, [scene, m])
+  return (
+    <group position={m.pos} rotation-y={m.giro}>
+      <primitive object={obj} />
+    </group>
+  )
+}
+
 /** Um andar da casa: poucas peças grandes + plantas, flores, tapetes e quadros */
-function Andar3D({ geo, oculto }: { geo: GeoAndar; oculto: boolean }) {
+function Andar3D({ nome: andar, geo, oculto, luz }: { nome: string; geo: GeoAndar; oculto: boolean; luz: LuzAssada | null }) {
   const mats = useMemo(() => {
     const m = criarMateriais()
     // materiais dos tapetes e quadros deste andar (entram no "esconder" também)
@@ -75,21 +102,27 @@ function Andar3D({ geo, oculto }: { geo: GeoAndar; oculto: boolean }) {
     fogo.emissiveIntensity = 3 + Math.sin(t * 13) * 0.5 + Math.sin(t * 7.3) * 0.6
   })
 
-  const tapetes = useMemo(
-    () =>
-      geo.tapetes.map((t) => {
-        const g = t.tipo === 'redondo' || t.tipo === 'infantil' ? new CircleGeometry(t.w / 2, 48) : new PlaneGeometry(t.w, t.d)
-        g.rotateX(-Math.PI / 2)
-        g.rotateY(t.giro)
-        g.translate(...t.pos)
-        return g
-      }),
-    [geo],
-  )
+  const tapetesBase = useMemo(() => geo.tapetes.map((t) => geoTapete(t)), [geo])
+
+  // luz assada (quando já carregou): geometria com as coordenadas do mapa + material que usa o mapa
+  const { pecas, tapetes } = useMemo(() => {
+    const mapa = luz?.mapas[andar]
+    if (!luz || !mapa) return { pecas: geo.pecas, tapetes: tapetesBase }
+    const trocar = (chave: string, g: BufferGeometry) => {
+      const nova = comLuz(g, luz.uv.get(`${andar}/${chave}`))
+      if (!nova) return g
+      usarLuz(mats[chave], mapa)
+      return nova
+    }
+    return {
+      pecas: Object.fromEntries(Object.entries(geo.pecas).map(([k, g]) => [k, trocar(k, g)])),
+      tapetes: tapetesBase.map((g, i) => trocar('tapete' + i, g)),
+    }
+  }, [luz, andar, geo, tapetesBase, mats])
 
   return (
     <group>
-      {Object.entries(geo.pecas).map(([nome, g]) => (
+      {Object.entries(pecas).map(([nome, g]) => (
         <mesh key={nome} geometry={g} material={mats[nome]} castShadow={!SEM_SOMBRA.has(nome)} receiveShadow />
       ))}
       {geo.folhas && <mesh geometry={geo.folhas} material={mats.folhas} castShadow receiveShadow />}
@@ -99,6 +132,14 @@ function Andar3D({ geo, oculto }: { geo: GeoAndar; oculto: boolean }) {
           <mesh geometry={geo.arranjos.rosas} material={mats.rosas} />
         </>
       )}
+      {/* plantas e vasos escaneados de verdade */}
+      <group visible={!oculto}>
+        {geo.modelos.map((m, i) => (
+          <Suspense key={i} fallback={null}>
+            <ModeloGLB m={m} />
+          </Suspense>
+        ))}
+      </group>
       {tapetes.map((g, i) => (
         <mesh key={i} geometry={g} material={mats['tapete' + i]} receiveShadow />
       ))}
@@ -307,6 +348,7 @@ interface CenaProps {
 
 export function CenaCasa({ ocultos, qualidade, foco, amplo, luzes }: CenaProps) {
   const geo = useMemo(() => montarCasa(), [])
+  const luz = useLuzAssada()
   const sol = useRef<DirectionalLight>(null)
 
   // a "área de sombra" do sol segue o que a câmera está vendo (sombra nítida perto, sem gastar à toa)
@@ -333,9 +375,8 @@ export function CenaCasa({ ocultos, qualidade, foco, amplo, luzes }: CenaProps) 
   return (
     <>
       <Ceu />
-      <Environment resolution={64} frames={1} environmentIntensity={0.28}>
-        <Ceu />
-      </Environment>
+      {/* céu de verdade (foto 360°) nos reflexos dos vidros, da água e dos metais */}
+      <CeuHDR arquivo="tarde.hdr" intensidade={0.35} />
       <fog attach="fog" args={['#DCEBF4', 70, 320]} />
       <hemisphereLight args={['#FFF3E2', '#E9D6B6', 0.8]} />
       <ambientLight color="#FFE6C4" intensity={0.18} />
@@ -354,10 +395,10 @@ export function CenaCasa({ ocultos, qualidade, foco, amplo, luzes }: CenaProps) 
         <pointLight key={i} position={luzes[i] ?? [0, -50, 0]} color="#FFC98E" intensity={luzes[i] ? 9 : 0} distance={9} decay={1.6} />
       ))}
 
-      <Andar3D geo={geo.terreo} oculto={false} />
-      <Andar3D geo={geo.superior} oculto={ocultos.superior} />
-      <Andar3D geo={geo.teto} oculto={ocultos.teto} />
-      <Andar3D geo={geo.fora} oculto={false} />
+      <Andar3D nome="terreo" geo={geo.terreo} oculto={false} luz={luz} />
+      <Andar3D nome="superior" geo={geo.superior} oculto={ocultos.superior} luz={luz} />
+      <Andar3D nome="teto" geo={geo.teto} oculto={ocultos.teto} luz={luz} />
+      <Andar3D nome="fora" geo={geo.fora} oculto={false} luz={null} />
       <Quintal qualidade={qualidade} />
       <Nuvens poucas={qualidade !== 'alta'} />
     </>

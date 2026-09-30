@@ -1,4 +1,3 @@
-import { Environment } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import { Suspense, useLayoutEffect, useMemo, useRef } from 'react'
 import {
@@ -26,6 +25,7 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import { criarArranjos, materialRosas } from '../mundo/arranjos'
 import { Coqueiro, matFolhas } from '../mundo/Arvore'
 import { criarTufo } from '../mundo/Grama'
+import { CeuHDR } from '../mundo/CeuHDR'
 import { Passaros } from '../mundo/Passaros'
 import { texReal } from '../lib/texturasReais'
 import { texJuta, texLavanda, texMadeira } from '../mundo/texturas'
@@ -243,9 +243,8 @@ export function CenaCasamento({ qualidade }: { qualidade: Qualidade }) {
   return (
     <>
       <CeuPorDoSol />
-      <Environment resolution={64} frames={1} environmentIntensity={0.4}>
-        <CeuPorDoSol />
-      </Environment>
+      {/* céu de pôr do sol de verdade (foto 360°) nos reflexos: taças, vidros, o mar */}
+      <CeuHDR arquivo="por-do-sol.hdr" intensidade={0.45} />
       <fog attach="fog" args={['#F1B4A6', 90, 430]} />
 
       {/* luz dourada do sol se pondo + o céu rosado */}
