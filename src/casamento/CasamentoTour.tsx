@@ -3,11 +3,10 @@ import { Canvas } from '@react-three/fiber'
 import { Bloom, EffectComposer, HueSaturation, N8AO, ToneMapping, Vignette } from '@react-three/postprocessing'
 import { AnimatePresence, motion } from 'framer-motion'
 import { ToneMappingMode } from 'postprocessing'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Carregando } from '../components/Carregando'
 import { CameraTour, PainelTour, type CamTour } from '../components/Tour'
 import { PASSEIO_CASAMENTO, type ParadaCasamento } from '../data/casamento'
-import { somDoMar } from '../lib/somDoMar'
 import { CenaCasamento, type Qualidade } from './CenaCasamento'
 
 // Onde a câmera fica e pra onde olha em cada parada (o mar e o sol ficam pro lado -z)
@@ -23,29 +22,14 @@ const CAMERAS: Record<ParadaCasamento, CamTour> = {
 }
 const VISTA_LIVRE = { pos: [-20, 17, 30] as [number, number, number], alvo: [6, 0.5, -3] as [number, number, number] }
 
-function IconeSom({ ligado }: { ligado: boolean }) {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" />
-      {ligado ? <path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11" /> : <path d="m16 9.5 5 5m0-5-5 5" />}
-    </svg>
-  )
-}
-
 export default function CasamentoTour({ onSair }: { onSair: () => void }) {
   const [i, setI] = useState(0)
   const [livre, setLivre] = useState(false)
   const [pronto, setPronto] = useState(false)
-  const [som, setSom] = useState(false) // desligado por padrão
   const celular = typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches
   const [qualidade, setQualidade] = useState<Qualidade>(celular ? 'media' : 'alta')
   const [dpr, setDpr] = useState(() => Math.min(window.devicePixelRatio || 1, celular ? 1.5 : 2))
 
-  useEffect(() => {
-    somDoMar(som)
-  }, [som])
-  // desliga o som ao sair
-  useEffect(() => () => somDoMar(false), [])
 
   const parada = PASSEIO_CASAMENTO[i]
   const cam = CAMERAS[parada.id]
@@ -85,15 +69,6 @@ export default function CasamentoTour({ onSair }: { onSair: () => void }) {
         livre={livre}
         onLivre={() => setLivre((v) => !v)}
         onSair={onSair}
-        extras={
-          <button
-            onClick={() => setSom((v) => !v)}
-            aria-label={som ? 'Desligar o som do mar' : 'Ligar o som do mar'}
-            className="grid size-10 place-items-center rounded-full bg-papel/80 text-grafite/75 shadow-suave ring-1 ring-dourado/25 backdrop-blur-md active:scale-[0.97]"
-          >
-            <IconeSom ligado={som} />
-          </button>
-        }
         painelLivre={<p className="py-1 text-[11px] tracking-[0.18em] text-grafite/55 uppercase">arraste pra girar · pince pra aproximar</p>}
       />
 

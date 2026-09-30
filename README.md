@@ -74,4 +74,4 @@ Pra trocar ou adicionar: edite a lista em `scripts/baixar-texturas.mjs` e rode `
 - `montar.ts`: onde fica cada coisa (altar, corredor, cadeiras, tenda, mesas, pista, lounge, bar)
 - `Ambiente.tsx`: céu do pôr do sol, mar, areia, morros e veleiro
 - `CenaCasamento.tsx`: materiais, luzes e velas
-- `CasamentoTour.tsx`: o passeio (câmeras de cada parada e o botão do som do mar)
+- `CasamentoTour.tsx`: o passeio (câmeras de cada parada)
