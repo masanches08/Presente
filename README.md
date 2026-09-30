@@ -46,7 +46,7 @@ Pra ligar a sincronização:
 - `src/mundo/Cena.tsx`: onde cada coisa fica no campo (casa, árvores, altar, correio...)
 - `src/mundo/terreno.ts`: o formato do chão (colinas, praia, mar) e por onde passa o caminho
 - `src/mundo/Grama.tsx`, `Flores.tsx`, `Arvore.tsx`: a natureza (grama e flores balançando com o vento, árvores, coqueiros, borboletas)
-- `src/mundo/objetos/`: a casa, o altar do casamento, o correio, a árvore das fotos, o relógio de sol, a cerquinha, o barquinho da lua de mel e a quadra de futevôlei (`QuadraFtv.tsx`, na areia ao lado do casamento: 18 x 9 m, rede a 2,20 m)
+- `src/mundo/objetos/`: a casa, o altar do casamento, o correio, a árvore das fotos, o relógio de sol, a cerquinha, o barquinho da lua de mel e a quadra de futevôlei (`QuadraFtv.tsx`, na areia ao lado do casamento: 18 x 9 m, rede a 2,20 m, com cara de escolinha de praia: postes de eucalipto, fitas amarelas, bolas de futevôlei, tenda, cadeiras, bandeira do Brasil e bandeiras "FUTEVÔLEI")
 - `src/mundo/texturas.ts`: todas as texturas (telhas, folhas, flores...) são desenhadas no próprio código
 - `public/models/`: pássaros animados (modelos oficiais do three.js, licença MIT)
 

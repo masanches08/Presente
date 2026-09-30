@@ -107,8 +107,8 @@ PONTOS.push({
   soOlhar: true,
   marcador: [31, 3.6, -25],
   alvo: [31, 0.9, -25],
-  direcao: [-0.8, 0.42, 0.55],
-  distancia: 15,
+  direcao: [-0.8, 0.36, 0.6],
+  distancia: 12.5,
 })
 
 export const pontoPorId = (id: PontoId) => PONTOS.find((p) => p.id === id)!
