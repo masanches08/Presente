@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { useCallback, useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { IconeFechar, SetaDireita, SetaEsquerda } from '../components/Icons'
@@ -9,6 +9,7 @@ import { formatarData, lerData } from '../lib/datas'
 /** Tela cheia: desliza pro lado pra trocar de foto */
 function Visualizador({ indice, onTrocar, onFechar }: { indice: number; onTrocar: (i: number) => void; onFechar: () => void }) {
   const foto = FOTOS[indice]
+  const parado = useReducedMotion()
   const [direcao, setDirecao] = useState(0)
   const ir = useCallback(
     (d: number) => {
@@ -78,9 +79,15 @@ function Visualizador({ indice, onTrocar, onFechar }: { indice: number; onTrocar
             alt={foto.legenda ?? ''}
             custom={direcao}
             variants={{
-              entra: (d: number) => ({ x: d * 300, opacity: 0 }),
-              fica: { x: 0, opacity: 1 },
-              sai: (d: number) => ({ x: d * -300, opacity: 0 }),
+              entra: (d: number) => ({ x: d * 300, opacity: 0, scale: 1 }),
+              // (e um zoom bem lentinho enquanto ela está aberta)
+              fica: {
+                x: 0,
+                opacity: 1,
+                scale: parado ? 1 : 1.04,
+                transition: { x: { duration: 0.4, ease: [0.22, 1, 0.36, 1] }, opacity: { duration: 0.4 }, scale: { duration: 14, ease: 'linear' } },
+              },
+              sai: (d: number) => ({ x: d * -300, opacity: 0, transition: { duration: 0.35 } }),
             }}
             initial="entra"
             animate="fica"
@@ -120,11 +127,18 @@ function Visualizador({ indice, onTrocar, onFechar }: { indice: number; onTrocar
 /** Uma polaroid: todas no mesmo formato (3:4), levemente tortinhas */
 function Miniatura({ foto, indice, onClick }: { foto: Foto; indice: number; onClick: () => void }) {
   const [carregou, setCarregou] = useState(false)
+  const parado = useReducedMotion()
+  const giro = indice % 2 ? 1 : -1 // cada polaroid levemente torta pra um lado
   return (
     <motion.button
       onClick={onClick}
+      initial={parado ? false : { opacity: 0, y: 28, rotate: giro * 4 }}
+      whileInView={{ opacity: 1, y: 0, rotate: giro }}
+      viewport={{ once: true, margin: '0px 0px -40px 0px' }}
+      transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1], delay: (indice % 2) * 0.1 }}
+      style={parado ? { rotate: giro } : undefined}
       whileTap={{ scale: 0.97 }}
-      className={`block w-full rounded-2xl bg-papel p-2 pb-7 text-left shadow-suave ring-1 ring-dourado/15 ${indice % 2 ? 'rotate-1' : '-rotate-1'}`}
+      className="block w-full rounded-2xl bg-papel p-2 pb-7 text-left shadow-suave ring-1 ring-dourado/15"
     >
       <div className="aspect-[3/4] overflow-hidden rounded-lg bg-[#EFE6D8]">
         <img
@@ -133,7 +147,7 @@ function Miniatura({ foto, indice, onClick }: { foto: Foto; indice: number; onCl
           loading="lazy"
           decoding="async"
           onLoad={() => setCarregou(true)}
-          className={`size-full object-cover transition-opacity duration-700 ${carregou ? 'opacity-100' : 'opacity-0'}`}
+          className={`size-full object-cover ${carregou ? 'revelar' : 'opacity-0'}`}
         />
       </div>
       {foto.legenda && <p className="-mb-4 px-1 pt-2 font-serif text-base leading-tight text-grafite/70 italic">{foto.legenda}</p>}

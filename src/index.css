@@ -169,9 +169,29 @@
   }
 }
 
+/* foto "revelando" como uma polaroid: começa clarinha e sépia e ganha cor */
+@keyframes revelar {
+  from {
+    opacity: 0.25;
+    filter: brightness(1.55) sepia(0.45) saturate(0.4) contrast(0.75) blur(1.5px);
+  }
+  55% {
+    opacity: 1;
+  }
+  to {
+    opacity: 1;
+    filter: none;
+  }
+}
+
+.revelar {
+  animation: revelar 2.2s var(--ease-suave, ease-out) both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .marcador-ponto,
-  .brilho-dourado {
+  .brilho-dourado,
+  .revelar {
     animation: none;
   }
 }
