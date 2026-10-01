@@ -17,7 +17,7 @@ import { Casamento } from './objetos/Casamento'
 import { QuadraFtv } from './objetos/QuadraFtv'
 import { Balizadores, Caminho, Canteiros } from './objetos/Jardim'
 import { RelogioSol } from './objetos/RelogioSol'
-import { AraraPista } from './AraraPista'
+import { Revoada } from './Revoada'
 import { Passaros } from './Passaros'
 import type { PontoId } from './pontos'
 import { altura, fatorCosta } from './terreno'
@@ -184,8 +184,8 @@ export function Cena({ onFocar, onPista, nossoDia, qualidade }: Props) {
       <Suspense fallback={null}>
         <Nuvens poucas={qualidade !== 'alta'} />
         <Passaros />
-        {/* de vez em quando passa uma arara com uma cartinha no pezinho */}
-        <AraraPista onPegou={onPista} />
+        {/* pássaros que vêm e vão; às vezes uma arara traz uma cartinha no pezinho */}
+        <Revoada onPegou={onPista} />
       </Suspense>
       <Borboletas quantidade={qualidade === 'baixa' ? 8 : 16} />
       <Vagalumes muitos={nossoDia} />

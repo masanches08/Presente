@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber'
 import { useEffect, useMemo, useRef } from 'react'
 import type { Group } from 'three'
 
+// Pássaros que ficam voando em círculo lá no alto (as araras que vêm e vão estão em Revoada.tsx)
 // Modelos animados oficiais do three.js (licença MIT), em public/models/
 const MODELOS = {
   flamingo: '/models/Flamingo.glb',
@@ -24,8 +25,6 @@ const VOOS: Voo[] = [
   { modelo: 'flamingo', raio: 34, altura: 16, vel: 0.05, fase: 0, centro: [10, 0], escala: 0.02 },
   { modelo: 'flamingo', raio: 36, altura: 17.5, vel: 0.05, fase: 0.12, centro: [10, 0], escala: 0.019 },
   { modelo: 'cegonha', raio: 48, altura: 22, vel: -0.035, fase: 2, centro: [0, -10], escala: 0.018 },
-  { modelo: 'papagaio', raio: 16, altura: 9, vel: 0.09, fase: 4, centro: [-4, 0], escala: 0.012 },
-  { modelo: 'papagaio', raio: 17, altura: 10, vel: 0.09, fase: 4.25, centro: [-4, 0], escala: 0.011 },
 ]
 
 function Passaro({ voo }: { voo: Voo }) {
