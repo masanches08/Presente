@@ -30,5 +30,11 @@ export const SEGREDOS: Segredo[] = [
  */
 export const CHANCE_ARARA = 0.9
 
+/**
+ * ⚠️ Só pra testar: a arara com a cartinha continua aparecendo mesmo depois de já ter sido pega.
+ * Antes de entregar, volte pra false.
+ */
+export const ARARA_SEMPRE = true
+
 /** Quanto falta pra desbloquear */
 export const TEMPO_DESBLOQUEIO = '???'

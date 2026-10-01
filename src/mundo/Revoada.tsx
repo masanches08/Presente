@@ -2,7 +2,7 @@ import { useAnimations, useCursor, useGLTF } from '@react-three/drei'
 import { useFrame, type ThreeEvent } from '@react-three/fiber'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { AdditiveBlending, CanvasTexture, CatmullRomCurve3, Vector3, type Camera, type Group, type Sprite, type SpriteMaterial } from 'three'
-import { CHANCE_ARARA } from '../data/luademel'
+import { ARARA_SEMPRE, CHANCE_ARARA } from '../data/luademel'
 import { desbloquear, jaDesbloqueado } from '../lib/desbloqueios'
 import { altura } from './terreno'
 
@@ -172,7 +172,7 @@ function Passaro({ vaga, onPegou }: { vaga: (typeof VAGAS)[number]; onPegou: () 
       v.rota = novaRota(camera)
       v.inicio = t
       v.fuga = -1
-      v.cartinha = vaga.tipo === 'arara' && !cartinhaNoAr && !jaDesbloqueado('arara') && Math.random() < CHANCE_ARARA
+      v.cartinha = vaga.tipo === 'arara' && !cartinhaNoAr && (ARARA_SEMPRE || !jaDesbloqueado('arara')) && Math.random() < CHANCE_ARARA
       if (v.cartinha) cartinhaNoAr = true
       v.duracao = sorteio(v.cartinha ? DURACAO.cartinha : DURACAO.normal)
       setComCartinha(v.cartinha)
