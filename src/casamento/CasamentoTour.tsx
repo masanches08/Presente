@@ -1,3 +1,4 @@
+import { Preload } from '@react-three/drei'
 import { Canvas } from '@react-three/fiber'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useState } from 'react'
@@ -42,12 +43,14 @@ export default function CasamentoTour({ onSair }: { onSair: () => void }) {
         onCreated={() => setTimeout(() => setPronto(true), 700)}
       >
         <SombraCongelada />
+        {/* prepara todos os shaders já no carregamento (senão dá uma travadinha quando algo aparece pela 1ª vez) */}
+        <Preload all />
         <MedidorDebug />
         <LimiteFps />
         <Desempenho setDpr={setDpr} onPiorar={() => setQualidade('media')} />
         <CenaCasamento qualidade={qualidade} />
         {/* entrada de cinema: vem lá do mar até o altar */}
-        <CameraTour cam={cam} livre={livre} vistaLivre={VISTA_LIVRE} distancia={[4, 80]} entrada={[0, 9, -85]} duracaoEntrada={3.2} fovMax={72} recuoMax={1.2} />
+        <CameraTour cam={cam} livre={livre} vistaLivre={VISTA_LIVRE} distancia={[4, 80]} entrada={[0, 9, -85]} duracaoEntrada={3.2} fovMax={80} recuoMax={1.4} />
       </Canvas>
       <Vinheta forca={0.36} />
 

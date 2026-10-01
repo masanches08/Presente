@@ -1,46 +1,71 @@
-import { useAnimations, useCursor, useGLTF } from '@react-three/drei'
-import { useFrame, type ThreeEvent } from '@react-three/fiber'
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { AdditiveBlending, CanvasTexture, CatmullRomCurve3, Vector3, type Camera, type Group, type Sprite, type SpriteMaterial } from 'three'
-import { ARARA_CARTINHA, ARARA_SEMPRE } from '../data/luademel'
-import { desbloquear, jaDesbloqueado } from '../lib/desbloqueios'
-import { altura } from './terreno'
+import { useAnimations, useCursor, useGLTF } from "@react-three/drei";
+import { useFrame, type ThreeEvent } from "@react-three/fiber";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  AdditiveBlending,
+  CanvasTexture,
+  CatmullRomCurve3,
+  Vector3,
+  type Camera,
+  type Group,
+  type Sprite,
+  type SpriteMaterial,
+} from "three";
+import { ARARA_CARTINHA, ARARA_SEMPRE } from "../data/luademel";
+import { desbloquear, jaDesbloqueado } from "../lib/desbloqueios";
+import { altura } from "./terreno";
 
 // Revoada: de vez em quando um pássaro atravessa a tela, sempre na frente de onde a câmera está olhando
 // (na vista geral, na casa, na praia…), e some do outro lado.
 // A arara da cartinha tem horário próprio (ARARA_CARTINHA): passa sozinha e devagar, até ela pegar.
 // Tocou nela: o segredo da lua de mel é desbloqueado (e ela não volta mais).
 
-type Tipo = 'arara' | 'flamingo'
+type Tipo = "arara" | "flamingo";
 const MODELOS: Record<Tipo, { url: string; escala: number }> = {
-  arara: { url: '/models/Parrot.glb', escala: 0.03 },
-  flamingo: { url: '/models/Flamingo.glb', escala: 0.021 },
-}
+  arara: { url: "/models/Parrot.glb", escala: 0.03 },
+  flamingo: { url: "/models/Flamingo.glb", escala: 0.021 },
+};
 
 // cada "vaga" é um pássaro que fica indo e voltando (poucos: no máximo um de cada por vez)
-const VAGAS: { tipo: Tipo; primeira: [number, number]; espera: [number, number]; cartinha?: boolean }[] = [
-  { tipo: 'arara', primeira: [5, 12], espera: [20, 40] },
-  { tipo: 'flamingo', primeira: [25, 40], espera: [45, 80] },
-  { tipo: 'arara', primeira: ARARA_CARTINHA.primeira, espera: ARARA_CARTINHA.intervalo, cartinha: true },
-]
-const DURACAO = { normal: [13, 18] as [number, number], cartinha: [24, 28] as [number, number] }
+const VAGAS: {
+  tipo: Tipo;
+  primeira: [number, number];
+  espera: [number, number];
+  cartinha?: boolean;
+}[] = [
+  { tipo: "arara", primeira: [5, 12], espera: [20, 40] },
+  { tipo: "flamingo", primeira: [25, 40], espera: [45, 80] },
+  {
+    tipo: "arara",
+    primeira: ARARA_CARTINHA.primeira,
+    espera: ARARA_CARTINHA.intervalo,
+    cartinha: true,
+  },
+];
+const DURACAO = {
+  normal: [13, 18] as [number, number],
+  cartinha: [24, 28] as [number, number],
+};
 
-const sorteio = ([a, b]: [number, number]) => a + Math.random() * (b - a)
+const sorteio = ([a, b]: [number, number]) => a + Math.random() * (b - a);
 
 /** Uma rota que cruza a tela de um lado pro outro, na frente da câmera, numa altura boa de ver */
 function novaRota(camera: Camera) {
-  const olhar = new Vector3()
-  camera.getWorldDirection(olhar)
-  const frente = olhar.clone()
-  frente.y = 0
-  if (frente.lengthSq() < 1e-4) frente.set(0, 0, -1)
-  frente.normalize()
-  const direita = new Vector3(-frente.z, 0, frente.x)
-  const lado = Math.random() < 0.5 ? 1 : -1
-  const dist = sorteio([22, 32])
-  const centro = camera.position.clone().addScaledVector(frente, dist)
+  const olhar = new Vector3();
+  camera.getWorldDirection(olhar);
+  const frente = olhar.clone();
+  frente.y = 0;
+  if (frente.lengthSq() < 1e-4) frente.set(0, 0, -1);
+  frente.normalize();
+  const direita = new Vector3(-frente.z, 0, frente.x);
+  const lado = Math.random() < 0.5 ? 1 : -1;
+  const dist = sorteio([22, 32]);
+  const centro = camera.position.clone().addScaledVector(frente, dist);
   // na altura do meio da tela (onde a câmera está olhando), pra não passar por cima do contador lá em cima
-  const alturaBase = camera.position.y + (olhar.y / Math.max(0.2, Math.hypot(olhar.x, olhar.z))) * dist + sorteio([0, 2.5])
+  const alturaBase =
+    camera.position.y +
+    (olhar.y / Math.max(0.2, Math.hypot(olhar.x, olhar.z))) * dist +
+    sorteio([0, 2.5]);
   // um arco suave (sem curvas fechadas)
   const pontos = [
     [-64, 10, 4],
@@ -49,25 +74,28 @@ function novaRota(camera: Camera) {
     [30, 2.5, 1.5],
     [64, 10, 4],
   ].map(([s, f, h]) => {
-    const p = centro.clone().addScaledVector(direita, s * lado).addScaledVector(frente, f)
-    p.y = Math.max(alturaBase + h, altura(p.x, p.z) + 5)
-    return p
-  })
-  return new CatmullRomCurve3(pontos, false, 'catmullrom', 0.5)
+    const p = centro
+      .clone()
+      .addScaledVector(direita, s * lado)
+      .addScaledVector(frente, f);
+    p.y = Math.max(alturaBase + h, altura(p.x, p.z) + 5);
+    return p;
+  });
+  return new CatmullRomCurve3(pontos, false, "catmullrom", 0.5);
 }
 
 /** O reflexinho de luz no papel */
 function texBrilho() {
-  const c = document.createElement('canvas')
-  c.width = c.height = 64
-  const ctx = c.getContext('2d')!
-  const g = ctx.createRadialGradient(32, 32, 0, 32, 32, 32)
-  g.addColorStop(0, 'rgba(255,255,255,1)')
-  g.addColorStop(0.3, 'rgba(255,255,255,0.35)')
-  g.addColorStop(1, 'rgba(255,255,255,0)')
-  ctx.fillStyle = g
-  ctx.fillRect(0, 0, 64, 64)
-  return new CanvasTexture(c)
+  const c = document.createElement("canvas");
+  c.width = c.height = 64;
+  const ctx = c.getContext("2d")!;
+  const g = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+  g.addColorStop(0, "rgba(255,255,255,1)");
+  g.addColorStop(0.3, "rgba(255,255,255,0.35)");
+  g.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, 64, 64);
+  return new CanvasTexture(c);
 }
 
 /**
@@ -75,24 +103,24 @@ function texBrilho() {
  * Nada de brilho chamativo: só um reflexinho rápido de vez em quando.
  */
 function Cartinha() {
-  const balanco = useRef<Group>(null)
-  const reflexo = useRef<Sprite>(null)
-  const brilho = useMemo(() => texBrilho(), [])
+  const balanco = useRef<Group>(null);
+  const reflexo = useRef<Sprite>(null);
+  const brilho = useMemo(() => texBrilho(), []);
   useFrame(({ clock }) => {
-    const g = balanco.current
-    if (!g) return
-    const t = clock.elapsedTime
-    g.rotation.z = Math.sin(t * 2.6) * 0.25
-    g.rotation.x = Math.sin(t * 1.9) * 0.12
+    const g = balanco.current;
+    if (!g) return;
+    const t = clock.elapsedTime;
+    g.rotation.z = Math.sin(t * 2.6) * 0.25;
+    g.rotation.x = Math.sin(t * 1.9) * 0.12;
     // reflexo: aparece por ~0,3 s a cada 5 s
-    const r = reflexo.current
+    const r = reflexo.current;
     if (r) {
-      const f = (t % 5) / 0.3
-      const v = f < 1 ? Math.sin(f * Math.PI) : 0
-      r.scale.setScalar(0.25 + v * 0.35)
-      ;(r.material as SpriteMaterial).opacity = v * 0.8
+      const f = (t % 5) / 0.3;
+      const v = f < 1 ? Math.sin(f * Math.PI) : 0;
+      r.scale.setScalar(0.25 + v * 0.35);
+      (r.material as SpriteMaterial).opacity = v * 0.8;
     }
-  })
+  });
   return (
     <group ref={balanco} position={[0, -0.08, -0.05]}>
       {/* barbante */}
@@ -107,146 +135,193 @@ function Cartinha() {
         </mesh>
         {/* a aba do envelope (dos dois lados) */}
         {[1, -1].map((l) => (
-          <mesh key={l} position={[0, 0.03, l * 0.014]} rotation={[0, l === 1 ? 0 : Math.PI, Math.PI]}>
+          <mesh
+            key={l}
+            position={[0, 0.03, l * 0.014]}
+            rotation={[0, l === 1 ? 0 : Math.PI, Math.PI]}
+          >
             <circleGeometry args={[0.24, 3, Math.PI / 2]} />
             <meshStandardMaterial color="#E4D8C2" roughness={0.9} />
           </mesh>
         ))}
         {/* selo de cera */}
         {[1, -1].map((l) => (
-          <mesh key={'s' + l} position={[0, -0.04, l * 0.017]} rotation-y={l === 1 ? 0 : Math.PI}>
+          <mesh
+            key={"s" + l}
+            position={[0, -0.04, l * 0.017]}
+            rotation-y={l === 1 ? 0 : Math.PI}
+          >
             <circleGeometry args={[0.055, 16]} />
             <meshStandardMaterial color="#9C2B25" roughness={0.5} />
           </mesh>
         ))}
         <sprite ref={reflexo} position={[0.14, 0.08, 0.03]} scale={0.25}>
-          <spriteMaterial map={brilho} transparent depthWrite={false} blending={AdditiveBlending} opacity={0} />
+          <spriteMaterial
+            map={brilho}
+            transparent
+            depthWrite={false}
+            blending={AdditiveBlending}
+            opacity={0}
+          />
         </sprite>
       </group>
     </group>
-  )
+  );
 }
 
-function Passaro({ vaga, onPegou }: { vaga: (typeof VAGAS)[number]; onPegou: () => void }) {
-  const m = MODELOS[vaga.tipo]
-  const { scene, animations } = useGLTF(m.url)
-  const copia = useMemo(() => scene.clone(true), [scene])
-  const grupo = useRef<Group>(null)
-  const modelo = useRef<Group>(null)
-  const { actions, names } = useAnimations(animations, modelo)
-  const [comCartinha, setComCartinha] = useState(false)
-  const [sobre, setSobre] = useState(false)
-  useCursor(sobre && comCartinha)
+function Passaro({
+  vaga,
+  onPegou,
+}: {
+  vaga: (typeof VAGAS)[number];
+  onPegou: () => void;
+}) {
+  const m = MODELOS[vaga.tipo];
+  const { scene, animations } = useGLTF(m.url);
+  const copia = useMemo(() => scene.clone(true), [scene]);
+  const grupo = useRef<Group>(null);
+  const modelo = useRef<Group>(null);
+  const { actions, names } = useAnimations(animations, modelo);
+  const [comCartinha, setComCartinha] = useState(false);
+  const [sobre, setSobre] = useState(false);
+  useCursor(sobre && comCartinha);
 
-  const voo = useRef({ rota: null as CatmullRomCurve3 | null, inicio: 0, duracao: 15, proxima: sorteio(vaga.primeira), fuga: -1, cartinha: false })
-  const ponto = useMemo(() => new Vector3(), [])
-  const frente = useMemo(() => new Vector3(), [])
-  const adiante = useMemo(() => new Vector3(), [])
-  const tela = useMemo(() => new Vector3(), [])
-  const debug = useMemo(() => new URLSearchParams(window.location.search).has('debug'), [])
+  const voo = useRef({
+    rota: null as CatmullRomCurve3 | null,
+    inicio: 0,
+    duracao: 15,
+    proxima: sorteio(vaga.primeira),
+    fuga: -1,
+    cartinha: false,
+  });
+  const ponto = useMemo(() => new Vector3(), []);
+  const frente = useMemo(() => new Vector3(), []);
+  const adiante = useMemo(() => new Vector3(), []);
+  const tela = useMemo(() => new Vector3(), []);
+  const debug = useMemo(
+    () => new URLSearchParams(window.location.search).has("debug"),
+    [],
+  );
 
   useEffect(() => {
-    const a = actions[names[0]]
-    a?.reset().play()
-    if (a) a.timeScale = 0.8 + Math.random() * 0.3
-  }, [actions, names])
+    const a = actions[names[0]];
+    a?.reset().play();
+    if (a) a.timeScale = 0.8 + Math.random() * 0.3;
+  }, [actions, names]);
 
   useFrame(({ clock, camera, size }) => {
-    const g = grupo.current
-    if (!g) return
-    const t = clock.elapsedTime
-    const v = voo.current
+    const g = grupo.current;
+    if (!g) return;
+    const t = clock.elapsedTime;
+    const v = voo.current;
 
     // parado esperando a próxima passada
     if (!v.rota) {
-      g.visible = false
-      if (t < v.proxima) return
+      g.visible = false;
+      if (t < v.proxima) return;
       // a arara da cartinha: só enquanto ela não foi pega
-      if (vaga.cartinha && !ARARA_SEMPRE && jaDesbloqueado('arara')) {
-        v.proxima = Infinity
-        return
+      if (vaga.cartinha && !ARARA_SEMPRE && jaDesbloqueado("arara")) {
+        v.proxima = Infinity;
+        return;
       }
-      v.rota = novaRota(camera)
-      v.inicio = t
-      v.fuga = -1
-      v.cartinha = !!vaga.cartinha
-      v.duracao = sorteio(v.cartinha ? DURACAO.cartinha : DURACAO.normal)
-      setComCartinha(v.cartinha)
+      v.rota = novaRota(camera);
+      v.inicio = t;
+      v.fuga = -1;
+      v.cartinha = !!vaga.cartinha;
+      v.duracao = sorteio(v.cartinha ? DURACAO.cartinha : DURACAO.normal);
+      setComCartinha(v.cartinha);
     }
 
-    if (v.fuga === -2) v.fuga = t
-    let u = (t - v.inicio) / v.duracao
-    if (v.fuga >= 0) u = Math.min(1, u + (t - v.fuga) * 0.05) // soltou a cartinha: vai embora mais rápido
+    if (v.fuga === -2) v.fuga = t;
+    let u = (t - v.inicio) / v.duracao;
+    if (v.fuga >= 0) u = Math.min(1, u + (t - v.fuga) * 0.05); // soltou a cartinha: vai embora mais rápido
     if (u >= 1) {
-      g.visible = false
-      v.rota = null
-      v.cartinha = false
-      setComCartinha(false)
-      v.proxima = t + sorteio(vaga.espera)
-      return
+      g.visible = false;
+      v.rota = null;
+      v.cartinha = false;
+      setComCartinha(false);
+      v.proxima = t + sorteio(vaga.espera);
+      return;
     }
-    g.visible = true
-    v.rota.getPointAt(u, ponto)
-    v.rota.getTangentAt(u, frente)
-    v.rota.getTangentAt(Math.min(1, u + 0.03), adiante)
-    g.position.copy(ponto)
-    g.position.y += Math.sin(t * 2.2) * 0.2
+    g.visible = true;
+    v.rota.getPointAt(u, ponto);
+    v.rota.getTangentAt(u, frente);
+    v.rota.getTangentAt(Math.min(1, u + 0.03), adiante);
+    g.position.copy(ponto);
+    g.position.y += Math.sin(t * 2.2) * 0.2;
     // direção sempre a da rota (sem atraso), inclinação pequena nas curvas e nunca de ponta-cabeça
-    const rumo = Math.atan2(frente.x, frente.z)
-    let curva = Math.atan2(adiante.x, adiante.z) - rumo
-    curva = Math.atan2(Math.sin(curva), Math.cos(curva))
-    const subida = Math.atan2(frente.y, Math.hypot(frente.x, frente.z))
-    g.rotation.set(Math.max(-0.3, Math.min(0.3, -subida)), rumo, Math.max(-0.35, Math.min(0.35, -curva * 3)), 'YXZ')
+    const rumo = Math.atan2(frente.x, frente.z);
+    let curva = Math.atan2(adiante.x, adiante.z) - rumo;
+    curva = Math.atan2(Math.sin(curva), Math.cos(curva));
+    const subida = Math.atan2(frente.y, Math.hypot(frente.x, frente.z));
+    g.rotation.set(
+      Math.max(-0.3, Math.min(0.3, -subida)),
+      rumo,
+      Math.max(-0.35, Math.min(0.35, -curva * 3)),
+      "YXZ",
+    );
 
     // (teste automático: onde está cada pássaro na tela)
     if (debug) {
-      tela.copy(g.position).project(camera)
-      const info = { visivel: tela.z < 1, x: ((tela.x + 1) / 2) * size.width, y: ((1 - tela.y) / 2) * size.height, tipo: vaga.tipo }
-      const w = window as unknown as { __arara?: unknown; __passaros?: Record<number, unknown> }
-      w.__passaros = { ...w.__passaros, [VAGAS.indexOf(vaga)]: { ...info, t } }
-      if (v.cartinha && v.fuga === -1) w.__arara = info
+      tela.copy(g.position).project(camera);
+      const info = {
+        visivel: tela.z < 1,
+        x: ((tela.x + 1) / 2) * size.width,
+        y: ((1 - tela.y) / 2) * size.height,
+        tipo: vaga.tipo,
+      };
+      const w = window as unknown as {
+        __arara?: unknown;
+        __passaros?: Record<number, unknown>;
+      };
+      w.__passaros = { ...w.__passaros, [VAGAS.indexOf(vaga)]: { ...info, t } };
+      if (v.cartinha && v.fuga === -1) w.__arara = info;
     }
-  })
+  });
 
   const tocar = (e: ThreeEvent<MouseEvent>) => {
-    const v = voo.current
-    if (!grupo.current?.visible || !v.cartinha || v.fuga >= 0) return
-    e.stopPropagation()
-    if (e.delta > 12) return
-    v.fuga = -2 // marcado; o horário certo é pego no próximo quadro
-    setComCartinha(false)
-    desbloquear('arara')
-    onPegou()
-  }
+    const v = voo.current;
+    if (!grupo.current?.visible || !v.cartinha || v.fuga >= 0) return;
+    e.stopPropagation();
+    if (e.delta > 12) return;
+    v.fuga = -2; // marcado; o horário certo é pego no próximo quadro
+    setComCartinha(false);
+    desbloquear("arara");
+    onPegou();
+  };
 
   return (
     <group ref={grupo} visible={false}>
       <group ref={modelo} scale={m.escala}>
         <primitive object={copia} />
       </group>
-      {comCartinha && (
-        <>
-          <group scale={1.6}>
-            <Cartinha />
-          </group>
-          {/* área de toque bem maior que a arara (ela está voando) */}
-          <mesh
-            position={[0, -0.6, 0]}
-            onClick={tocar}
-            onPointerOver={(e) => {
-              if (!grupo.current?.visible) return
-              e.stopPropagation()
-              setSobre(true)
-            }}
-            onPointerOut={() => setSobre(false)}
-          >
-            <sphereGeometry args={[2.8, 10, 8]} />
-            <meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} />
-          </mesh>
-        </>
-      )}
+      {/* (fica sempre montada e só aparece quando é a vez dela: assim não trava ao aparecer) */}
+      <group visible={comCartinha}>
+        <group scale={1.6}>
+          <Cartinha />
+        </group>
+        {/* área de toque bem maior que a arara (ela está voando) */}
+        <mesh
+          position={[0, -0.6, 0]}
+          onClick={tocar}
+          onPointerOver={(e) => {
+            if (!grupo.current?.visible) return;
+            e.stopPropagation();
+            setSobre(true);
+          }}
+          onPointerOut={() => setSobre(false)}
+        >
+          <sphereGeometry args={[2.8, 10, 8]} />
+          <meshBasicMaterial
+            transparent
+            opacity={0}
+            depthWrite={false}
+            colorWrite={false}
+          />
+        </mesh>
+      </group>
     </group>
-  )
+  );
 }
 
 export function Revoada({ onPegou }: { onPegou: () => void }) {
@@ -256,7 +331,7 @@ export function Revoada({ onPegou }: { onPegou: () => void }) {
         <Passaro key={i} vaga={v} onPegou={onPegou} />
       ))}
     </>
-  )
+  );
 }
 
-for (const m of Object.values(MODELOS)) useGLTF.preload(m.url)
+for (const m of Object.values(MODELOS)) useGLTF.preload(m.url);

@@ -27,9 +27,9 @@ export function enquadrar(aspecto: number, fovBase: number, fovMax: number, recu
   if (aspecto >= ASPECTO_REFERENCIA) return { fov: fovBase, recuo: 1 }
   // largura de cena que o notebook mostra
   const meiaLarguraRef = Math.atan(Math.tan(grausParaRad(fovBase) / 2) * ASPECTO_REFERENCIA)
-  // no celular em pé mostramos uns 75% da largura do notebook (mais que isso as coisas ficam pequenas demais)
+  // no celular em pé mostramos uns 90% da largura do notebook
   const t = Math.min(1, Math.max(0, (ASPECTO_REFERENCIA - aspecto) / (ASPECTO_REFERENCIA - 0.45)))
-  const meiaLarguraAlvo = meiaLarguraRef * (1 - 0.25 * t)
+  const meiaLarguraAlvo = meiaLarguraRef * (1 - 0.1 * t)
   // 1) abre o ângulo
   const fovNecessario = radParaGraus(2 * Math.atan(Math.tan(meiaLarguraAlvo) / aspecto))
   const fov = Math.min(fovMax, Math.max(fovBase, fovNecessario))

@@ -30,9 +30,9 @@ export type Qualidade = 'alta' | 'media' | 'baixa'
 // Quanta coisa desenhar em cada nível de qualidade
 // (bem mais econômico que antes: o celular agradece)
 const QTD = {
-  alta: { grama: 22000, flores: 1300, arvoresLonge: 12, sombra: 1024, chao: 140 },
-  media: { grama: 13000, flores: 800, arvoresLonge: 9, sombra: 1024, chao: 110 },
-  baixa: { grama: 7000, flores: 450, arvoresLonge: 6, sombra: 512, chao: 80 },
+  alta: { grama: 22000, flores: 1300, arvoresLonge: 12, sombra: 1024, chao: 140, folhas: 70, folhasLonge: 40 },
+  media: { grama: 13000, flores: 800, arvoresLonge: 9, sombra: 1024, chao: 110, folhas: 46, folhasLonge: 26 },
+  baixa: { grama: 7000, flores: 450, arvoresLonge: 6, sombra: 512, chao: 80, folhas: 34, folhasLonge: 20 },
 }
 
 interface Props {
@@ -175,10 +175,10 @@ export function Cena({ onFocar, onPista, nossoDia, qualidade }: Props) {
       </Interativo>
 
       {ARVORES.map(([x, z, alt, s]) => (
-        <Arvore key={s} semente={s} altura={alt} position={noChao(x, z)} rotation-y={s} />
+        <Arvore key={s} semente={s} altura={alt} cartoes={q.folhas} position={noChao(x, z)} rotation-y={s} />
       ))}
       {arvoresLonge.map((a) => (
-        <Arvore key={a.semente} semente={a.semente} altura={a.alt} cartoes={40} position={a.pos} rotation-y={a.semente} />
+        <Arvore key={a.semente} semente={a.semente} altura={a.alt} cartoes={q.folhasLonge} position={a.pos} rotation-y={a.semente} />
       ))}
 
       <Suspense fallback={null}>

@@ -25,7 +25,7 @@ export function Controles({ foco }: { foco: PontoId | null }) {
   const { size, camera } = useThree()
   const aspecto = size.width / size.height
   // celular em pé: abre o ângulo e afasta um pouco, pra mostrar a mesma largura do notebook
-  const { fov, recuo: fator } = enquadrar(aspecto, 40, 62, 1.6)
+  const { fov, recuo: fator } = enquadrar(aspecto, 40, 70, 1.8)
   const ultimoToque = useRef(Infinity) // só começa a girar sozinho depois da entrada
   const primeiraVez = useRef(true)
   const introAte = useRef(0)

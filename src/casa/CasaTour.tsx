@@ -1,4 +1,4 @@
-import { useCursor } from '@react-three/drei'
+import { Preload, useCursor } from '@react-three/drei'
 import { Canvas } from '@react-three/fiber'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useCallback, useMemo, useState } from 'react'
@@ -51,7 +51,7 @@ export default function CasaTour({ onSair }: { onSair: () => void }) {
   // celular em pé: lá fora a câmera pode recuar; dentro de casa só abre o ângulo (recuar atravessaria parede)
   const cam = useMemo(() => {
     const c = CAMERAS[parada.id]
-    return { ...c, recuoMax: c.onde === 'lá fora' ? 1.18 : 1 }
+    return { ...c, recuoMax: c.onde === 'lá fora' ? 1.3 : 1 }
   }, [parada.id])
   const ocultos = livre ? { superior: andar === 'terreo', teto: andar !== 'tudo' } : { superior: false, teto: false }
 
@@ -67,11 +67,13 @@ export default function CasaTour({ onSair }: { onSair: () => void }) {
       >
         {/* a sombra do sol muda de lugar a cada cômodo: redesenha só nessa hora */}
         <SombraCongelada chave={`${cam.alvo.join()}${livre}`} />
+        {/* prepara todos os shaders já no carregamento (senão dá uma travadinha quando algo aparece pela 1ª vez) */}
+        <Preload all />
         <MedidorDebug />
         <LimiteFps />
         <Desempenho setDpr={setDpr} onPiorar={() => setQualidade('media')} />
         <CenaCasa ocultos={ocultos} qualidade={qualidade} foco={cam.alvo} amplo={livre} luzes={livre ? [] : (cam.luzes ?? [])} />
-        <CameraTour cam={cam} livre={livre} vistaLivre={VISTA_LIVRE} distancia={[3, 90]} onPiscar={piscar} fovMax={74} recuoMax={1.18} />
+        <CameraTour cam={cam} livre={livre} vistaLivre={VISTA_LIVRE} distancia={[3, 90]} onPiscar={piscar} fovMax={84} recuoMax={1.3} />
         {livre && (
           <AreasTocaveis
             andar={andar}

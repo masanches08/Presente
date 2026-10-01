@@ -1,3 +1,4 @@
+import { Preload } from '@react-three/drei'
 import { Canvas } from '@react-three/fiber'
 import { useState } from 'react'
 import { CLASSE_CANVAS, Desempenho, dprInicial, ehCelular, GL_LEVE, LimiteFps, MedidorDebug, SombraCongelada, Vinheta } from '../lib/leve'
@@ -34,6 +35,8 @@ export default function Mundo({ foco, onFocar, onPista, nossoDia, pausado, onPro
       >
         {/* o sol não se mexe: a sombra é desenhada uma vez só (quando a qualidade muda, de novo) */}
         <SombraCongelada chave={qualidade} />
+        {/* prepara todos os shaders já no carregamento (senão dá uma travadinha quando algo aparece pela 1ª vez) */}
+        <Preload all />
         <MedidorDebug />
         <LimiteFps ativo={!pausado} />
         <Desempenho setDpr={setDpr} onPiorar={() => setQualidade((q) => (q === 'alta' ? 'media' : 'baixa'))} />
