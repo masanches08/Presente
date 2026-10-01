@@ -1,7 +1,6 @@
-import { PerformanceMonitor } from '@react-three/drei'
 import { Canvas } from '@react-three/fiber'
 import { useState } from 'react'
-import { CLASSE_CANVAS, dprInicial, ehCelular, GL_LEVE, LimiteFps, MedidorDebug, SombraCongelada, Vinheta } from '../lib/leve'
+import { CLASSE_CANVAS, Desempenho, dprInicial, ehCelular, GL_LEVE, LimiteFps, MedidorDebug, SombraCongelada, Vinheta } from '../lib/leve'
 import { Cena, type Qualidade } from './Cena'
 import { Controles } from './Controles'
 import { ProjetorMarcadores } from './ProjetorMarcadores'
@@ -37,12 +36,7 @@ export default function Mundo({ foco, onFocar, onPista, nossoDia, pausado, onPro
         <SombraCongelada chave={qualidade} />
         <MedidorDebug />
         <LimiteFps ativo={!pausado} />
-        <PerformanceMonitor
-          onDecline={() => {
-            setDpr((d) => Math.max(1, d - 0.5))
-            setQualidade((q) => (q === 'alta' ? 'media' : 'baixa'))
-          }}
-        />
+        <Desempenho setDpr={setDpr} onPiorar={() => setQualidade((q) => (q === 'alta' ? 'media' : 'baixa'))} />
         <Cena onFocar={onFocar} onPista={onPista} nossoDia={nossoDia} qualidade={qualidade} />
         <Controles foco={foco} />
         <ProjetorMarcadores />

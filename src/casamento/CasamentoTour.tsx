@@ -1,9 +1,8 @@
-import { PerformanceMonitor } from '@react-three/drei'
 import { Canvas } from '@react-three/fiber'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useState } from 'react'
 import { Carregando } from '../components/Carregando'
-import { CLASSE_CANVAS, dprInicial, ehCelular, GL_LEVE, LimiteFps, MedidorDebug, SombraCongelada, Vinheta } from '../lib/leve'
+import { CLASSE_CANVAS, Desempenho, dprInicial, ehCelular, GL_LEVE, LimiteFps, MedidorDebug, SombraCongelada, Vinheta } from '../lib/leve'
 import { CameraTour, PainelTour, type CamTour } from '../components/Tour'
 import { PASSEIO_CASAMENTO, type ParadaCasamento } from '../data/casamento'
 import { CenaCasamento, type Qualidade } from './CenaCasamento'
@@ -45,12 +44,7 @@ export default function CasamentoTour({ onSair }: { onSair: () => void }) {
         <SombraCongelada />
         <MedidorDebug />
         <LimiteFps />
-        <PerformanceMonitor
-          onDecline={() => {
-            setDpr((d) => Math.max(1, d - 0.5))
-            setQualidade('media')
-          }}
-        />
+        <Desempenho setDpr={setDpr} onPiorar={() => setQualidade('media')} />
         <CenaCasamento qualidade={qualidade} />
         {/* entrada de cinema: vem lá do mar até o altar */}
         <CameraTour cam={cam} livre={livre} vistaLivre={VISTA_LIVRE} distancia={[4, 80]} entrada={[0, 9, -85]} duracaoEntrada={3.2} />

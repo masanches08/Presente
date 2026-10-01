@@ -1,3 +1,4 @@
+import { PerformanceMonitor } from '@react-three/drei'
 import { useThree } from '@react-three/fiber'
 import { useEffect } from 'react'
 import { NeutralToneMapping } from 'three'
@@ -9,8 +10,10 @@ import { NeutralToneMapping } from 'three'
 
 export const ehCelular = () => typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches
 
-/** Resolução inicial do 3D (baixa sozinha se o aparelho sofrer) */
-export const dprInicial = () => Math.min(window.devicePixelRatio || 1, ehCelular() ? 1.25 : 1.5)
+/** Resolução inicial do 3D: nítida (2x no celular); baixa sozinha, aos pouquinhos, só se o aparelho sofrer de verdade */
+export const dprInicial = () => Math.min(window.devicePixelRatio || 1, 2)
+/** O mínimo de resolução: abaixo disso fica serrilhado/borrado demais */
+const DPR_MINIMO = 1.25
 
 /** Configuração do WebGL: tom de cor "neutro" direto no desenho (sem passada extra) */
 export const GL_LEVE = { antialias: true, powerPreference: 'high-performance', toneMapping: NeutralToneMapping } as const
@@ -93,3 +96,28 @@ export function LimiteFps({ fps = fpsAlvo(), ativo = true }: { fps?: number; ati
   }, [fps, ativo, advance, clock])
   return null
 }
+
+/**
+ * Vigia o desempenho e, se o aparelho sofrer de verdade, baixa a resolução aos pouquinhos.
+ * Importante: no celular o 3D é limitado a 30 quadros por segundo de propósito, então "ruim"
+ * é bem abaixo disso (antes ele achava que 30 era ruim e baixava a qualidade até o fundo).
+ */
+export function Desempenho({ setDpr, onPiorar }: { setDpr: (f: (d: number) => number) => void; onPiorar?: () => void }) {
+  const alvo = fpsAlvo()
+  return (
+    <PerformanceMonitor
+      bounds={() => (alvo < 50 ? [alvo * 0.6, alvo * 0.9] : [38, 55])}
+      flipflops={3}
+      onDecline={() => {
+        let noMinimo = false
+        setDpr((d) => {
+          noMinimo = d <= DPR_MINIMO
+          return Math.max(DPR_MINIMO, d - 0.25)
+        })
+        // só tira detalhe (grama, sombra) se já baixou a resolução e ainda está sofrendo
+        if (noMinimo) onPiorar?.()
+      }}
+    />
+  )
+}
+

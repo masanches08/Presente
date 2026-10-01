@@ -1,9 +1,9 @@
-import { PerformanceMonitor, useCursor } from '@react-three/drei'
+import { useCursor } from '@react-three/drei'
 import { Canvas } from '@react-three/fiber'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useCallback, useState } from 'react'
 import { Carregando } from '../components/Carregando'
-import { CLASSE_CANVAS, dprInicial, ehCelular, GL_LEVE, LimiteFps, MedidorDebug, SombraCongelada, Vinheta } from '../lib/leve'
+import { CLASSE_CANVAS, Desempenho, dprInicial, ehCelular, GL_LEVE, LimiteFps, MedidorDebug, SombraCongelada, Vinheta } from '../lib/leve'
 import { CameraTour, PainelTour } from '../components/Tour'
 import { TOUR, type ParadaId } from '../data/tour'
 import { CenaCasa, type Qualidade } from './CenaCasa'
@@ -65,12 +65,7 @@ export default function CasaTour({ onSair }: { onSair: () => void }) {
         <SombraCongelada chave={`${cam.alvo.join()}${livre}`} />
         <MedidorDebug />
         <LimiteFps />
-        <PerformanceMonitor
-          onDecline={() => {
-            setDpr((d) => Math.max(1, d - 0.5))
-            setQualidade('media')
-          }}
-        />
+        <Desempenho setDpr={setDpr} onPiorar={() => setQualidade('media')} />
         <CenaCasa ocultos={ocultos} qualidade={qualidade} foco={cam.alvo} amplo={livre} luzes={livre ? [] : (cam.luzes ?? [])} />
         <CameraTour cam={cam} livre={livre} vistaLivre={VISTA_LIVRE} distancia={[3, 90]} onPiscar={piscar} />
         {livre && (
