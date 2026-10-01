@@ -8,6 +8,7 @@ import { Legenda } from './components/Legenda'
 import { Login } from './components/Login'
 import { Marcadores } from './components/Marcadores'
 import { Petalas } from './components/Petalas'
+import { PistaEncontrada } from './components/PistaEncontrada'
 import { useHoje } from './hooks/useHoje'
 import { useSessao } from './hooks/useSessao'
 import { irPara, useRota } from './hooks/useRota'
@@ -41,6 +42,7 @@ export default function App() {
   const [foco, setFoco] = useState<PontoId | null>(null)
   const [pronto, setPronto] = useState(false)
   const [jaTocou, setJaTocou] = useState(false)
+  const [pista, setPista] = useState(false)
 
   const { precisaLogin } = useSessao()
   // enquanto não entra, só o mundo aparece (desfocado) atrás do cartão de login
@@ -58,7 +60,7 @@ export default function App() {
   return (
     <>
       <Suspense fallback={null}>
-        <Mundo foco={foco} onFocar={focar} nossoDia={nossoDia || celebracao?.tipo === 'aniversario'} pausado={!!Pagina || naCasa || noCasamento || naLuaDeMel} onPronto={() => setPronto(true)} />
+        <Mundo foco={foco} onFocar={focar} onPista={() => setPista(true)} nossoDia={nossoDia || celebracao?.tipo === 'aniversario'} pausado={!!Pagina || naCasa || noCasamento || naLuaDeMel} onPronto={() => setPronto(true)} />
       </Suspense>
 
       <Marcadores foco={foco} visivel={liberado && !Pagina} onFocar={focar} />
@@ -87,6 +89,20 @@ export default function App() {
 
       {/* dia especial (aniversário dela ou dia 24): o "momento" de abertura */}
       {celebracao && <Celebracao key={celebracao.tipo} celebracao={celebracao} visivel={liberado} />}
+
+      {/* ela pegou a cartinha da arara: um segredo da lua de mel foi desbloqueado */}
+      <AnimatePresence>
+        {pista && (
+          <PistaEncontrada
+            onIr={() => {
+              setPista(false)
+              setFoco(null)
+              irPara('luademel')
+            }}
+            onFechar={() => setPista(false)}
+          />
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>{!pronto && <Carregando />}</AnimatePresence>
       <AnimatePresence>{pronto && precisaLogin && <Login />}</AnimatePresence>

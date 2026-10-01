@@ -17,6 +17,7 @@ import { Casamento } from './objetos/Casamento'
 import { QuadraFtv } from './objetos/QuadraFtv'
 import { Balizadores, Caminho, Canteiros } from './objetos/Jardim'
 import { RelogioSol } from './objetos/RelogioSol'
+import { AraraPista } from './AraraPista'
 import { Passaros } from './Passaros'
 import type { PontoId } from './pontos'
 import { altura, fatorCosta } from './terreno'
@@ -36,6 +37,8 @@ const QTD = {
 
 interface Props {
   onFocar: (id: PontoId) => void
+  /** Ela pegou a cartinha da arara (segredo da lua de mel) */
+  onPista: () => void
   nossoDia: boolean
   qualidade: Qualidade
 }
@@ -58,7 +61,7 @@ const ARVORES: [number, number, number, number][] = [
 ]
 
 /** Tudo o que existe no nosso cantinho. */
-export function Cena({ onFocar, nossoDia, qualidade }: Props) {
+export function Cena({ onFocar, onPista, nossoDia, qualidade }: Props) {
   const q = QTD[qualidade]
   const objetos = useRef<Group>(null)
   const sol = useRef<DirectionalLight>(null)
@@ -181,6 +184,8 @@ export function Cena({ onFocar, nossoDia, qualidade }: Props) {
       <Suspense fallback={null}>
         <Nuvens poucas={qualidade !== 'alta'} />
         <Passaros />
+        {/* de vez em quando passa uma arara com uma cartinha no pezinho */}
+        <AraraPista onPegou={onPista} />
       </Suspense>
       <Borboletas quantidade={qualidade === 'baixa' ? 8 : 16} />
       <Vagalumes muitos={nossoDia} />

@@ -10,6 +10,7 @@ import type { PontoId } from './pontos'
 export interface MundoProps {
   foco: PontoId | null
   onFocar: (id: PontoId) => void
+  onPista: () => void
   nossoDia: boolean
   /** Para de desenhar (economiza bateria) quando uma página está aberta por cima */
   pausado: boolean
@@ -17,7 +18,7 @@ export interface MundoProps {
 }
 
 /** O nosso cantinho em 3D. Este arquivo só é baixado quando precisa (carregamento preguiçoso). */
-export default function Mundo({ foco, onFocar, nossoDia, pausado, onPronto }: MundoProps) {
+export default function Mundo({ foco, onFocar, onPista, nossoDia, pausado, onPronto }: MundoProps) {
   // qualidade alta, que baixa sozinha se o aparelho começar a sofrer
   const [dpr, setDpr] = useState(dprInicial)
   const [qualidade, setQualidade] = useState<Qualidade>(() => (ehCelular() ? 'media' : 'alta'))
@@ -42,7 +43,7 @@ export default function Mundo({ foco, onFocar, nossoDia, pausado, onPronto }: Mu
             setQualidade((q) => (q === 'alta' ? 'media' : 'baixa'))
           }}
         />
-        <Cena onFocar={onFocar} nossoDia={nossoDia} qualidade={qualidade} />
+        <Cena onFocar={onFocar} onPista={onPista} nossoDia={nossoDia} qualidade={qualidade} />
         <Controles foco={foco} />
         <ProjetorMarcadores />
       </Canvas>
