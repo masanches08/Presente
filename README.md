@@ -83,6 +83,12 @@ Dentro de casa é sempre **dia claro**: todo o interior recebe uma luz branca fo
 
 - `public/modelos/`: plantas e vasos escaneados (Poly Haven, CC0), baixados e comprimidos (malha simplificada, texturas pequenas) por `node scripts/baixar-modelos.mjs`. Na casa, são posicionados com `modelo(...)` em `src/casa/decoracao.ts`
 
+## Celular e notebook (`src/lib/enquadramento.ts`)
+
+O site é um só e se adapta à tela. As cenas foram enquadradas pra uma tela deitada; num celular em pé, a câmera abre o ângulo (e, lá fora, recua um pouco) pra mostrar quase a mesma largura de cena, e a imagem sobe um pouco pra o assunto não ficar atrás do cartão de baixo. Dentro de casa a câmera nunca recua (atravessaria parede).
+
+**Testar no celular** (mesmo Wi-Fi do computador): `npm run build` e depois `npm run preview -- --host`, e abra no celular o endereço "Network" que aparece (ex.: `http://192.168.15.147:4173`). Na primeira vez o Windows pode perguntar se libera o Node.js na rede: libere em "Redes privadas".
+
 ## Leve de propósito (`src/lib/leve.tsx`)
 
 O site tem que rodar liso no celular dela, então:

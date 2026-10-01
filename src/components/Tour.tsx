@@ -1,9 +1,10 @@
 import { CameraControls } from '@react-three/drei'
-import { useThree } from '@react-three/fiber'
+import { useFrame, useThree } from '@react-three/fiber'
 import CameraControlsImpl from 'camera-controls'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useRef, type ReactNode } from 'react'
 import type { PerspectiveCamera } from 'three'
+import { enquadrar, recuar, subidaPainel } from '../lib/enquadramento'
 import { SetaDireita, SetaEsquerda } from './Icons'
 
 const { ACTION } = CameraControlsImpl
@@ -14,6 +15,8 @@ export interface CamTour {
   alvo: V3
   /** Paradas do mesmo grupo: a câmera desliza. Grupos diferentes: um "piscar" suave (pra não atravessar paredes) */
   grupo?: string
+  /** Quanto a câmera pode recuar numa tela estreita (celular em pé). Dentro de casa, pouco: senão atravessa parede */
+  recuoMax?: number
 }
 
 interface CameraTourProps {
@@ -27,25 +30,55 @@ interface CameraTourProps {
   /** Tempo da entrada de cinema (segundos) */
   duracaoEntrada?: number
   onPiscar?: (v: boolean) => void
+  /** Ângulo da câmera no notebook (as cenas foram enquadradas com ele) */
+  fovBase?: number
+  /** O máximo que o ângulo pode abrir numa tela estreita */
+  fovMax?: number
+  /** Recuo máximo padrão (quando a parada não diz o dela) */
+  recuoMax?: number
 }
 
 /**
  * A câmera dos passeios: entrada de cinema, desliza entre paradas próximas,
  * "pisca" suave quando teria que atravessar parede, e na visão livre gira/aproxima com o dedo.
  */
-export function CameraTour({ cam, livre, vistaLivre, distancia = [3, 75], entrada = [8, 14, 22], duracaoEntrada = 2.2, onPiscar }: CameraTourProps) {
+export function CameraTour({
+  cam,
+  livre,
+  vistaLivre,
+  distancia = [3, 75],
+  entrada = [8, 14, 22],
+  duracaoEntrada = 2.2,
+  onPiscar,
+  fovBase = 50,
+  fovMax = 78,
+  recuoMax = 1.5,
+}: CameraTourProps) {
   const ref = useRef<CameraControlsImpl>(null)
   const { size, camera } = useThree()
+  const aspecto = size.width / size.height
+  // celular em pé: abre o ângulo (e recua um pouco, onde dá) pra mostrar a mesma largura de cena do notebook
+  const { fov, recuo } = enquadrar(aspecto, fovBase, fovMax, cam.recuoMax ?? recuoMax)
+  const recuoLivre = enquadrar(aspecto, fovBase, fovMax, recuoMax).recuo
+  const deslocamento = useRef(0)
   const anterior = useRef<CamTour | null>(null)
   const saiuDoLivre = useRef(false)
   const cortePendente = useRef(false) // um "piscar" foi interrompido no meio (cliques rápidos)
 
   useEffect(() => {
     const c = camera as PerspectiveCamera
-    c.fov = size.width < size.height ? 62 : 50
+    c.fov = fov
     c.near = 0.05
     c.updateProjectionMatrix()
-  }, [size, camera])
+  }, [fov, camera])
+
+  // a imagem sobe um pouco, pra o que importa ficar no meio da parte livre (acima do cartão de baixo)
+  useFrame((_, dt) => {
+    const c = camera as PerspectiveCamera
+    const alvo = subidaPainel(aspecto, !livre)
+    deslocamento.current += (alvo - deslocamento.current) * Math.min(1, dt * 3)
+    c.setViewOffset(size.width, size.height, 0, deslocamento.current * size.height, size.width, size.height)
+  })
 
   // no tour a câmera anda sozinha; na visão livre ela gira e aproxima com o dedo
   useEffect(() => {
@@ -71,12 +104,12 @@ export function CameraTour({ cam, livre, vistaLivre, distancia = [3, 75], entrad
       cortePendente.current = false
       onPiscar?.(false)
       c.smoothTime = 1.0
-      c.setLookAt(...vistaLivre.pos, ...vistaLivre.alvo, true)
+      c.setLookAt(...recuar(vistaLivre.pos, vistaLivre.alvo, recuoLivre), ...vistaLivre.alvo, true)
       return
     }
     const ant = anterior.current
     anterior.current = cam
-    const [px, py, pz] = cam.pos
+    const [px, py, pz] = recuar(cam.pos, cam.alvo, recuo)
     const [tx, ty, tz] = cam.alvo
     if (!ant) {
       // entrada de cinema
@@ -103,7 +136,7 @@ export function CameraTour({ cam, livre, vistaLivre, distancia = [3, 75], entrad
       onPiscar?.(false)
     }, 420)
     return () => clearTimeout(id)
-  }, [cam, livre, onPiscar, vistaLivre, entrada, duracaoEntrada])
+  }, [cam, livre, onPiscar, vistaLivre, entrada, duracaoEntrada, recuo, recuoLivre])
 
   return <CameraControls ref={ref} makeDefault />
 }

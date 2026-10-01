@@ -47,7 +47,7 @@ export default function CasamentoTour({ onSair }: { onSair: () => void }) {
         <Desempenho setDpr={setDpr} onPiorar={() => setQualidade('media')} />
         <CenaCasamento qualidade={qualidade} />
         {/* entrada de cinema: vem lá do mar até o altar */}
-        <CameraTour cam={cam} livre={livre} vistaLivre={VISTA_LIVRE} distancia={[4, 80]} entrada={[0, 9, -85]} duracaoEntrada={3.2} />
+        <CameraTour cam={cam} livre={livre} vistaLivre={VISTA_LIVRE} distancia={[4, 80]} entrada={[0, 9, -85]} duracaoEntrada={3.2} fovMax={72} recuoMax={1.2} />
       </Canvas>
       <Vinheta forca={0.36} />
 

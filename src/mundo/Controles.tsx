@@ -3,6 +3,7 @@ import { useFrame, useThree } from '@react-three/fiber'
 import CameraControlsImpl from 'camera-controls'
 import { useEffect, useRef } from 'react'
 import { PerspectiveCamera, Vector3 } from 'three'
+import { enquadrar } from '../lib/enquadramento'
 import { noChao, pontoPorId, type PontoId } from './pontos'
 import type { Vec3 } from './util'
 
@@ -23,8 +24,8 @@ export function Controles({ foco }: { foco: PontoId | null }) {
   const ref = useRef<CameraControlsImpl>(null)
   const { size, camera } = useThree()
   const aspecto = size.width / size.height
-  // celular em pé: afasta um pouco a câmera pra caber tudo
-  const fator = aspecto > 1 ? 1 : Math.min(1.45, Math.max(1, 1 / (aspecto * 1.4)))
+  // celular em pé: abre o ângulo e afasta um pouco, pra mostrar a mesma largura do notebook
+  const { fov, recuo: fator } = enquadrar(aspecto, 40, 62, 1.6)
   const ultimoToque = useRef(Infinity) // só começa a girar sozinho depois da entrada
   const primeiraVez = useRef(true)
   const introAte = useRef(0)
@@ -32,9 +33,9 @@ export function Controles({ foco }: { foco: PontoId | null }) {
 
   useEffect(() => {
     const cam = camera as PerspectiveCamera
-    cam.fov = aspecto < 1 ? 50 : 40
+    cam.fov = fov
     cam.updateProjectionMatrix()
-  }, [aspecto, camera])
+  }, [fov, camera])
 
   useEffect(() => {
     const c = ref.current

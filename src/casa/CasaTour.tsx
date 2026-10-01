@@ -1,7 +1,7 @@
 import { useCursor } from '@react-three/drei'
 import { Canvas } from '@react-three/fiber'
 import { AnimatePresence, motion } from 'framer-motion'
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { Carregando } from '../components/Carregando'
 import { CLASSE_CANVAS, Desempenho, dprInicial, ehCelular, GL_LEVE, LimiteFps, MedidorDebug, SombraCongelada, Vinheta } from '../lib/leve'
 import { CameraTour, PainelTour } from '../components/Tour'
@@ -48,7 +48,11 @@ export default function CasaTour({ onSair }: { onSair: () => void }) {
   const piscar = useCallback((v: boolean) => setPiscando(v), [])
 
   const parada = TOUR[i]
-  const cam = CAMERAS[parada.id]
+  // celular em pé: lá fora a câmera pode recuar; dentro de casa só abre o ângulo (recuar atravessaria parede)
+  const cam = useMemo(() => {
+    const c = CAMERAS[parada.id]
+    return { ...c, recuoMax: c.onde === 'lá fora' ? 1.18 : 1 }
+  }, [parada.id])
   const ocultos = livre ? { superior: andar === 'terreo', teto: andar !== 'tudo' } : { superior: false, teto: false }
 
   return (
@@ -67,7 +71,7 @@ export default function CasaTour({ onSair }: { onSair: () => void }) {
         <LimiteFps />
         <Desempenho setDpr={setDpr} onPiorar={() => setQualidade('media')} />
         <CenaCasa ocultos={ocultos} qualidade={qualidade} foco={cam.alvo} amplo={livre} luzes={livre ? [] : (cam.luzes ?? [])} />
-        <CameraTour cam={cam} livre={livre} vistaLivre={VISTA_LIVRE} distancia={[3, 90]} onPiscar={piscar} />
+        <CameraTour cam={cam} livre={livre} vistaLivre={VISTA_LIVRE} distancia={[3, 90]} onPiscar={piscar} fovMax={74} recuoMax={1.18} />
         {livre && (
           <AreasTocaveis
             andar={andar}
