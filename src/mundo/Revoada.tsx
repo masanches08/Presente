@@ -2,53 +2,52 @@ import { useAnimations, useCursor, useGLTF } from '@react-three/drei'
 import { useFrame, type ThreeEvent } from '@react-three/fiber'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { AdditiveBlending, CanvasTexture, CatmullRomCurve3, Vector3, type Camera, type Group, type Sprite, type SpriteMaterial } from 'three'
-import { ARARA_SEMPRE, CHANCE_ARARA } from '../data/luademel'
+import { ARARA_CARTINHA, ARARA_SEMPRE } from '../data/luademel'
 import { desbloquear, jaDesbloqueado } from '../lib/desbloqueios'
 import { altura } from './terreno'
 
-// Revoada: de tempos em tempos um pássaro atravessa a tela, sempre na frente de onde a câmera está olhando
-// (na vista geral, na casa, na praia…), e some do outro lado. Uns vêm, outros vão.
-// Cada arara que passa tem uma chance (CHANCE_ARARA) de trazer a cartinha amarrada no pezinho.
-// Tocou na arara da cartinha: o segredo da lua de mel é desbloqueado.
+// Revoada: de vez em quando um pássaro atravessa a tela, sempre na frente de onde a câmera está olhando
+// (na vista geral, na casa, na praia…), e some do outro lado.
+// A arara da cartinha tem horário próprio (ARARA_CARTINHA): passa sozinha e devagar, até ela pegar.
+// Tocou nela: o segredo da lua de mel é desbloqueado (e ela não volta mais).
 
 type Tipo = 'arara' | 'flamingo'
 const MODELOS: Record<Tipo, { url: string; escala: number }> = {
   arara: { url: '/models/Parrot.glb', escala: 0.03 },
-  flamingo: { url: '/models/Flamingo.glb', escala: 0.028 },
+  flamingo: { url: '/models/Flamingo.glb', escala: 0.021 },
 }
 
-// cada "vaga" é um pássaro que fica indo e voltando
-const VAGAS: { tipo: Tipo; primeira: [number, number]; espera: [number, number] }[] = [
-  { tipo: 'arara', primeira: [2, 6], espera: [8, 18] },
-  { tipo: 'arara', primeira: [9, 15], espera: [10, 22] },
-  { tipo: 'arara', primeira: [16, 24], espera: [12, 26] },
-  { tipo: 'flamingo', primeira: [5, 12], espera: [14, 30] },
+// cada "vaga" é um pássaro que fica indo e voltando (poucos: no máximo um de cada por vez)
+const VAGAS: { tipo: Tipo; primeira: [number, number]; espera: [number, number]; cartinha?: boolean }[] = [
+  { tipo: 'arara', primeira: [5, 12], espera: [20, 40] },
+  { tipo: 'flamingo', primeira: [25, 40], espera: [45, 80] },
+  { tipo: 'arara', primeira: ARARA_CARTINHA.primeira, espera: ARARA_CARTINHA.intervalo, cartinha: true },
 ]
 const DURACAO = { normal: [13, 18] as [number, number], cartinha: [24, 28] as [number, number] }
 
 const sorteio = ([a, b]: [number, number]) => a + Math.random() * (b - a)
 
-// só uma cartinha no ar por vez
-let cartinhaNoAr = false
-
 /** Uma rota que cruza a tela de um lado pro outro, na frente da câmera, numa altura boa de ver */
 function novaRota(camera: Camera) {
-  const frente = new Vector3()
-  camera.getWorldDirection(frente)
+  const olhar = new Vector3()
+  camera.getWorldDirection(olhar)
+  const frente = olhar.clone()
   frente.y = 0
   if (frente.lengthSq() < 1e-4) frente.set(0, 0, -1)
   frente.normalize()
   const direita = new Vector3(-frente.z, 0, frente.x)
   const lado = Math.random() < 0.5 ? 1 : -1
-  const dist = sorteio([18, 30])
+  const dist = sorteio([22, 32])
   const centro = camera.position.clone().addScaledVector(frente, dist)
-  const alturaBase = camera.position.y + sorteio([-3, 2])
+  // na altura do meio da tela (onde a câmera está olhando), pra não passar por cima do contador lá em cima
+  const alturaBase = camera.position.y + (olhar.y / Math.max(0.2, Math.hypot(olhar.x, olhar.z))) * dist + sorteio([0, 2.5])
+  // um arco suave (sem curvas fechadas)
   const pontos = [
-    [-62, 22, 7],
-    [-26, 4, 1.5],
-    [0, sorteio([-3, 3]), 0],
-    [26, 4, 1.5],
-    [62, 22, 6],
+    [-64, 10, 4],
+    [-30, 2.5, 1.5],
+    [0, 0, 0],
+    [30, 2.5, 1.5],
+    [64, 10, 4],
   ].map(([s, f, h]) => {
     const p = centro.clone().addScaledVector(direita, s * lado).addScaledVector(frente, f)
     p.y = Math.max(alturaBase + h, altura(p.x, p.z) + 5)
@@ -142,6 +141,7 @@ function Passaro({ vaga, onPegou }: { vaga: (typeof VAGAS)[number]; onPegou: () 
   const voo = useRef({ rota: null as CatmullRomCurve3 | null, inicio: 0, duracao: 15, proxima: sorteio(vaga.primeira), fuga: -1, cartinha: false })
   const ponto = useMemo(() => new Vector3(), [])
   const frente = useMemo(() => new Vector3(), [])
+  const adiante = useMemo(() => new Vector3(), [])
   const tela = useMemo(() => new Vector3(), [])
   const debug = useMemo(() => new URLSearchParams(window.location.search).has('debug'), [])
 
@@ -151,15 +151,7 @@ function Passaro({ vaga, onPegou }: { vaga: (typeof VAGAS)[number]; onPegou: () 
     if (a) a.timeScale = 0.8 + Math.random() * 0.3
   }, [actions, names])
 
-  // se a página sair, a cartinha volta a poder aparecer em outro pássaro
-  useEffect(
-    () => () => {
-      if (voo.current.cartinha) cartinhaNoAr = false
-    },
-    [],
-  )
-
-  useFrame(({ clock, camera, size }, dt) => {
+  useFrame(({ clock, camera, size }) => {
     const g = grupo.current
     if (!g) return
     const t = clock.elapsedTime
@@ -169,14 +161,17 @@ function Passaro({ vaga, onPegou }: { vaga: (typeof VAGAS)[number]; onPegou: () 
     if (!v.rota) {
       g.visible = false
       if (t < v.proxima) return
+      // a arara da cartinha: só enquanto ela não foi pega
+      if (vaga.cartinha && !ARARA_SEMPRE && jaDesbloqueado('arara')) {
+        v.proxima = Infinity
+        return
+      }
       v.rota = novaRota(camera)
       v.inicio = t
       v.fuga = -1
-      v.cartinha = vaga.tipo === 'arara' && !cartinhaNoAr && (ARARA_SEMPRE || !jaDesbloqueado('arara')) && Math.random() < CHANCE_ARARA
-      if (v.cartinha) cartinhaNoAr = true
+      v.cartinha = !!vaga.cartinha
       v.duracao = sorteio(v.cartinha ? DURACAO.cartinha : DURACAO.normal)
       setComCartinha(v.cartinha)
-      g.rotation.set(0, 0, 0)
     }
 
     if (v.fuga === -2) v.fuga = t
@@ -185,7 +180,6 @@ function Passaro({ vaga, onPegou }: { vaga: (typeof VAGAS)[number]; onPegou: () 
     if (u >= 1) {
       g.visible = false
       v.rota = null
-      if (v.cartinha) cartinhaNoAr = false
       v.cartinha = false
       setComCartinha(false)
       v.proxima = t + sorteio(vaga.espera)
@@ -194,18 +188,23 @@ function Passaro({ vaga, onPegou }: { vaga: (typeof VAGAS)[number]; onPegou: () 
     g.visible = true
     v.rota.getPointAt(u, ponto)
     v.rota.getTangentAt(u, frente)
+    v.rota.getTangentAt(Math.min(1, u + 0.03), adiante)
     g.position.copy(ponto)
-    g.position.y += Math.sin(t * 2.2) * 0.25
-    const alvo = Math.atan2(frente.x, frente.z)
-    let d = alvo - g.rotation.y
-    d = Math.atan2(Math.sin(d), Math.cos(d))
-    g.rotation.y += u < 0.02 ? d : d * Math.min(1, dt * 3)
-    g.rotation.z = -d * 0.8
+    g.position.y += Math.sin(t * 2.2) * 0.2
+    // direção sempre a da rota (sem atraso), inclinação pequena nas curvas e nunca de ponta-cabeça
+    const rumo = Math.atan2(frente.x, frente.z)
+    let curva = Math.atan2(adiante.x, adiante.z) - rumo
+    curva = Math.atan2(Math.sin(curva), Math.cos(curva))
+    const subida = Math.atan2(frente.y, Math.hypot(frente.x, frente.z))
+    g.rotation.set(Math.max(-0.3, Math.min(0.3, -subida)), rumo, Math.max(-0.35, Math.min(0.35, -curva * 3)), 'YXZ')
 
-    // (teste automático: onde está a arara da cartinha na tela)
-    if (debug && v.cartinha && v.fuga === -1) {
+    // (teste automático: onde está cada pássaro na tela)
+    if (debug) {
       tela.copy(g.position).project(camera)
-      ;(window as unknown as { __arara?: unknown }).__arara = { visivel: tela.z < 1, x: ((tela.x + 1) / 2) * size.width, y: ((1 - tela.y) / 2) * size.height }
+      const info = { visivel: tela.z < 1, x: ((tela.x + 1) / 2) * size.width, y: ((1 - tela.y) / 2) * size.height, tipo: vaga.tipo }
+      const w = window as unknown as { __arara?: unknown; __passaros?: Record<number, unknown> }
+      w.__passaros = { ...w.__passaros, [VAGAS.indexOf(vaga)]: { ...info, t } }
+      if (v.cartinha && v.fuga === -1) w.__arara = info
     }
   })
 

@@ -25,16 +25,14 @@ export const SEGREDOS: Segredo[] = [
 ]
 
 /**
- * Chance de cada arara que passa voando trazer a cartinha (passa uma a cada ~10–20 s).
- * ⚠️ 0.9 = 90% só pra testar. No final, algo como 0.1 (10%) deixa "de vez em quando".
+ * Quando passa a arara com a cartinha (em segundos olhando o mundo):
+ * a primeira vez entre `primeira`, e depois volta a cada `intervalo`, até ela pegar.
+ * Depois de pega, nunca mais aparece.
  */
-export const CHANCE_ARARA = 0.9
+export const ARARA_CARTINHA = { primeira: [20, 45] as [number, number], intervalo: [75, 120] as [number, number] }
 
-/**
- * ⚠️ Só pra testar: a arara com a cartinha continua aparecendo mesmo depois de já ter sido pega.
- * Antes de entregar, volte pra false.
- */
-export const ARARA_SEMPRE = true
+/** Só pra testar: true = a arara da cartinha continua aparecendo mesmo depois de pega */
+export const ARARA_SEMPRE = false
 
 /** Quanto falta pra desbloquear */
 export const TEMPO_DESBLOQUEIO = '???'

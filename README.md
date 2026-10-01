@@ -61,7 +61,7 @@ Pra ligar a sincronização:
 
 A tela "Bloqueado" tem 3 segredos pra ela achar pelo site, sem dica nenhuma (`src/data/luademel.ts`: o que cada um revela e onde fica escondido).
 - **Segredo 1, a arara:** de vez em quando passa uma arara no mundo com uma cartinha amarrada no pezinho (`src/mundo/Revoada.tsx`: pássaros que atravessam a tela de tempos em tempos, e cada arara tem uma chance de trazer a cartinha). Tocou nela: festa e "um segredo foi desbloqueado" (`src/components/PistaEncontrada.tsx`). Na próxima vez que ela entra na lua de mel, o cadeado daquele card quebra e mostra o passeio.
-- **Chance da arara aparecer:** `CHANCE_ARARA` em `src/data/luademel.ts` (⚠️ está 0.9 pra testar; o combinado é 0.1)
+- **Quando a arara da cartinha passa:** `ARARA_CARTINHA` em `src/data/luademel.ts` (1ª vez entre 20 e 45 s olhando o mundo, depois a cada 75–120 s, até ser pega; `ARARA_SEMPRE = true` faz ela voltar mesmo depois de pega, pra testar)
 - **Testar de novo do zero:** abra o site com `?resetar-pistas` (apaga os achados deste aparelho e do Supabase)
 - O que foi achado fica salvo no aparelho e no Supabase (tabela `desbloqueios`, em `supabase/desbloqueios.sql`)
 
