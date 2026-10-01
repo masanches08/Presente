@@ -2,103 +2,100 @@ import { motion } from 'framer-motion'
 import { useEffect, useState } from 'react'
 import { SEGREDOS } from '../data/luademel'
 import { useDesbloqueios } from '../lib/desbloqueios'
-import { CeuDeFesta } from './CeuDeFesta'
 
-const aparecer = (atraso: number) => ({
-  initial: { opacity: 0, y: 14, filter: 'blur(6px)' },
-  animate: { opacity: 1, y: 0, filter: 'blur(0px)' },
-  transition: { delay: atraso, duration: 0.9, ease: [0.22, 1, 0.36, 1] as const },
-})
-
-/** O envelope abrindo: a aba vira pra cima e sai um cartãozinho dourado com um cadeado aberto */
-function EnvelopeAbrindo() {
-  // depois de abrir, a aba vai pra trás do cartão (senão cobre ele)
-  const [abriu, setAbriu] = useState(false)
-  useEffect(() => {
-    const t = window.setTimeout(() => setAbriu(true), 900)
-    return () => window.clearTimeout(t)
-  }, [])
-  return (
-    <div className="relative mx-auto h-36 w-48" style={{ perspective: 600 }}>
-      {/* o cartão que sobe de dentro */}
-      <motion.div
-        initial={{ y: 30, opacity: 0 }}
-        animate={{ y: -64, opacity: 1 }}
-        transition={{ delay: 1.1, duration: 1, ease: [0.22, 1, 0.36, 1] }}
-        className="absolute inset-x-5 top-6 z-[2] grid h-28 place-items-center rounded-lg bg-gradient-to-b from-[#FFF4D6] to-[#F3D99A] shadow-lg"
-      >
-        <svg viewBox="0 0 24 24" className="size-9 text-[#A8742A]" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" aria-hidden>
-          <rect x="4.5" y="10.5" width="15" height="10" rx="2.5" />
-          <path d="M8 10.5V7.5a4 4 0 0 1 7.6-1.7" />
-          <circle cx="12" cy="15.3" r="1.2" fill="currentColor" />
-        </svg>
-      </motion.div>
-      {/* corpo do envelope (fica na frente do cartão) */}
-      <div className="absolute inset-x-0 bottom-0 z-[3] h-24 rounded-md bg-[#FFF6E2] shadow-xl" />
-      <svg viewBox="0 0 192 96" className="absolute inset-x-0 bottom-0 z-[3] h-24 w-full" aria-hidden>
-        <path d="M0 0 L96 58 L192 0 L192 96 L0 96 Z" fill="#F7E9CB" />
-        <path d="M0 96 L84 50 M192 96 L108 50" stroke="#E6D3AB" strokeWidth="2" />
-      </svg>
-      {/* a aba, que abre virando pra cima */}
-      <motion.div
-        initial={{ rotateX: 0 }}
-        animate={{ rotateX: 180 }}
-        transition={{ delay: 0.5, duration: 0.7, ease: 'easeInOut' }}
-        style={{ transformOrigin: 'top center', transformStyle: 'preserve-3d', zIndex: abriu ? 1 : 4 }}
-        className="absolute inset-x-0 top-12 h-14"
-      >
-        <svg viewBox="0 0 192 56" className="h-full w-full" aria-hidden>
-          <path d="M0 0 L96 56 L192 0 Z" fill="#F3E3C0" />
-        </svg>
-        {/* selo de cera */}
-        <div className="absolute top-7 left-1/2 size-7 -translate-x-1/2 rounded-full bg-[#B0302A] shadow ring-2 ring-[#8F2420] [backface-visibility:hidden]" />
-      </motion.div>
-    </div>
-  )
-}
-
-/** Quando ela pega a cartinha da arara: festa e o aviso de que um segredo foi desbloqueado */
+/**
+ * Quando ela pega a cartinha da arara: a cartinha cai na tela balançando como papel,
+ * o selo abre, sai um bilhetinho e ele desdobra com o recado. Sem fogos, delicado.
+ */
 export function PistaEncontrada({ onIr, onFechar }: { onIr: () => void; onFechar: () => void }) {
   const achados = useDesbloqueios().length
+  // 0 = caindo · 1 = abrindo · 2 = bilhete aberto
+  const [fase, setFase] = useState(0)
+  useEffect(() => {
+    const t1 = window.setTimeout(() => setFase(1), 1700)
+    const t2 = window.setTimeout(() => setFase(2), 2700)
+    return () => {
+      window.clearTimeout(t1)
+      window.clearTimeout(t2)
+    }
+  }, [])
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      exit={{ opacity: 0, transition: { duration: 0.6 } }}
-      transition={{ duration: 0.6 }}
-      className="fixed inset-0 z-[65] flex flex-col items-center justify-center overflow-hidden bg-[radial-gradient(ellipse_at_50%_40%,rgb(60_40_70/0.6),rgb(16_14_30/0.88))] px-8 text-center text-white backdrop-blur-[3px]"
+      exit={{ opacity: 0, transition: { duration: 0.5 } }}
+      transition={{ duration: 0.8 }}
+      className="fixed inset-0 z-[65] flex items-center justify-center overflow-hidden bg-[#1E1A16]/45 px-8 backdrop-blur-[4px]"
       style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
-      <CeuDeFesta modo="fogos" className="absolute inset-0" />
-      <div className="relative">
-        <motion.div initial={{ scale: 0.4, opacity: 0, rotate: -12 }} animate={{ scale: 1, opacity: 1, rotate: 0 }} transition={{ type: 'spring', stiffness: 130, damping: 13 }}>
-          <EnvelopeAbrindo />
-        </motion.div>
-        <motion.p {...aparecer(1.6)} className="mt-6 text-[11px] tracking-[0.4em] text-[#F3DFA8]/85 uppercase">
-          você achou uma pista
-        </motion.p>
-        <motion.div {...aparecer(1.9)}>
-          <h2 className="brilho-champanhe mt-3 font-serif text-[2.6rem] leading-[1.05] font-semibold">
-            Um segredo foi
-            <br />
-            desbloqueado
-          </h2>
-        </motion.div>
-        <motion.p {...aparecer(2.3)} className="mt-4 font-serif text-xl text-[#FFE9EE] italic">
-          {achados} de {SEGREDOS.length} da nossa lua de mel
-        </motion.p>
-        <motion.div {...aparecer(2.7)} className="mt-9 flex flex-col items-center gap-2">
-          <button
-            onClick={onIr}
-            className="rounded-full bg-[#F3DFA8] px-7 py-3 text-sm font-medium text-[#2E2A26] shadow-[0_0_30px_rgb(243_223_168/0.35)] active:scale-[0.98]"
+      {/* a cartinha caindo, balançando de um lado pro outro como papel */}
+      {fase < 2 && (
+        <motion.div
+          initial={{ y: '-60vh', x: -40, rotate: -25, opacity: 0 }}
+          animate={{ y: [null, '-30vh', '-10vh', 0], x: [null, 30, -20, 0], rotate: [null, 18, -10, 0], opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 1.6, ease: 'easeOut' }}
+          className="relative h-28 w-40"
+          style={{ perspective: 500 }}
+        >
+          {/* o bilhete saindo de dentro */}
+          <motion.div
+            initial={{ y: 0 }}
+            animate={{ y: fase >= 1 ? -40 : 0 }}
+            transition={{ duration: 0.8, ease: 'easeOut' }}
+            className="absolute inset-x-3 top-3 z-[2] h-24 rounded-sm bg-[#FFFDF7] shadow"
+            style={{ backgroundImage: 'repeating-linear-gradient(#FFFDF7 0 13px, #E9E1D2 13px 14px)' }}
+          />
+          {/* o envelope (papel comum) */}
+          <div className="absolute inset-0 z-[3] rounded-sm bg-[#EFE6D4] shadow-xl" style={{ clipPath: 'polygon(0 30%, 50% 62%, 100% 30%, 100% 100%, 0 100%)' }} />
+          <svg viewBox="0 0 160 112" className="absolute inset-0 z-[3] h-full w-full" aria-hidden>
+            <path d="M0 112 L72 66 M160 112 L88 66" stroke="#D6CAB2" strokeWidth="1.5" />
+          </svg>
+          {/* a aba com o selo de cera, que abre */}
+          <motion.div
+            initial={{ rotateX: 0 }}
+            animate={{ rotateX: fase >= 1 ? 180 : 0 }}
+            transition={{ duration: 0.6, ease: 'easeInOut' }}
+            style={{ transformOrigin: 'top center', transformStyle: 'preserve-3d', zIndex: fase >= 1 ? 1 : 4 }}
+            className="absolute inset-x-0 top-0 h-16"
           >
-            ver na lua de mel ✈
-          </button>
-          <button onClick={onFechar} className="rounded-full px-5 py-2 text-[13px] text-white/60 active:bg-white/10">
-            depois
-          </button>
+            <svg viewBox="0 0 160 64" className="h-full w-full" aria-hidden>
+              <path d="M0 0 L80 64 L160 0 Z" fill="#E4D8C2" />
+            </svg>
+            <div className="absolute top-9 left-1/2 size-6 -translate-x-1/2 rounded-full bg-[#9C2B25] shadow-sm [backface-visibility:hidden]" />
+          </motion.div>
         </motion.div>
-      </div>
+      )}
+
+      {/* o bilhete aberto, com o recado */}
+      {fase === 2 && (
+        <motion.div
+          initial={{ scaleY: 0.25, scaleX: 0.55, opacity: 0, rotate: -3 }}
+          animate={{ scaleY: 1, scaleX: 1, opacity: 1, rotate: -1 }}
+          transition={{ type: 'spring', stiffness: 120, damping: 16 }}
+          className="w-full max-w-xs rounded-sm px-7 pt-8 pb-6 text-center text-[#3B342C] shadow-2xl"
+          style={{ backgroundColor: '#FFFDF7', backgroundImage: 'repeating-linear-gradient(#FFFDF7 0 31px, #ECE4D6 31px 32px)' }}
+        >
+          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} className="text-[10px] tracking-[0.4em] text-[#9C2B25]/80 uppercase">
+            uma pista
+          </motion.p>
+          <motion.h2 initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6, duration: 0.8 }} className="mt-3 font-serif text-[2rem] leading-tight font-medium italic">
+            Você achou um segredo
+          </motion.h2>
+          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.1 }} className="mt-3 font-serif text-lg text-[#3B342C]/70 italic">
+            {achados} de {SEGREDOS.length} da nossa lua de mel
+          </motion.p>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.5 }} className="mt-6 flex flex-col items-center gap-1">
+            <button onClick={onIr} className="rounded-full bg-[#3B342C] px-6 py-3 text-sm font-medium text-[#FFFDF7] active:scale-[0.98]">
+              abrir na lua de mel
+            </button>
+            <button onClick={onFechar} className="rounded-full px-5 py-2 text-[13px] text-[#3B342C]/55 active:bg-black/5">
+              depois
+            </button>
+          </motion.div>
+        </motion.div>
+      )}
     </motion.div>
   )
 }

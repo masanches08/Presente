@@ -1,7 +1,7 @@
-import { Sparkles, useAnimations, useCursor, useGLTF } from '@react-three/drei'
+import { useAnimations, useCursor, useGLTF } from '@react-three/drei'
 import { useFrame, type ThreeEvent } from '@react-three/fiber'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { AdditiveBlending, CanvasTexture, CatmullRomCurve3, Vector3, type Group } from 'three'
+import { AdditiveBlending, CanvasTexture, CatmullRomCurve3, Vector3, type Group, type Sprite, type SpriteMaterial } from 'three'
 import { CHANCE_ARARA } from '../data/luademel'
 import { desbloquear, jaDesbloqueado } from '../lib/desbloqueios'
 
@@ -35,23 +35,27 @@ const CAMINHO = new CatmullRomCurve3(
 
 const sorteio = ([a, b]: [number, number]) => a + Math.random() * (b - a)
 
-/** Brilhinho dourado atrás da cartinha (pra chamar atenção sem pesar) */
+/** O reflexinho de luz no papel */
 function texBrilho() {
   const c = document.createElement('canvas')
   c.width = c.height = 64
   const ctx = c.getContext('2d')!
   const g = ctx.createRadialGradient(32, 32, 0, 32, 32, 32)
-  g.addColorStop(0, 'rgba(255,236,170,1)')
-  g.addColorStop(0.35, 'rgba(255,214,120,0.45)')
-  g.addColorStop(1, 'rgba(255,200,100,0)')
+  g.addColorStop(0, 'rgba(255,255,255,1)')
+  g.addColorStop(0.3, 'rgba(255,255,255,0.35)')
+  g.addColorStop(1, 'rgba(255,255,255,0)')
   ctx.fillStyle = g
   ctx.fillRect(0, 0, 64, 64)
   return new CanvasTexture(c)
 }
 
-/** A cartinha: envelope creme com selo de cera vermelho, pendurada num barbante */
+/**
+ * A cartinha: envelope de papel comum com selo de cera, pendurada num barbante.
+ * Nada de brilho chamativo: só um reflexinho rápido de vez em quando (nem escondido demais, nem fácil demais).
+ */
 function Cartinha({ pegou }: { pegou: boolean }) {
   const balanco = useRef<Group>(null)
+  const reflexo = useRef<Sprite>(null)
   const brilho = useMemo(() => texBrilho(), [])
   useFrame(({ clock }) => {
     const g = balanco.current
@@ -59,6 +63,14 @@ function Cartinha({ pegou }: { pegou: boolean }) {
     const t = clock.elapsedTime
     g.rotation.z = Math.sin(t * 2.6) * 0.25
     g.rotation.x = Math.sin(t * 1.9) * 0.12
+    // reflexo: aparece por ~0,3 s a cada 5 s
+    const r = reflexo.current
+    if (r) {
+      const f = (t % 5) / 0.3
+      const v = f < 1 ? Math.sin(f * Math.PI) : 0
+      r.scale.setScalar(0.25 + v * 0.35)
+      ;(r.material as SpriteMaterial).opacity = v * 0.8
+    }
   })
   if (pegou) return null
   return (
@@ -71,26 +83,25 @@ function Cartinha({ pegou }: { pegou: boolean }) {
       <group position={[0, -0.56, 0]}>
         <mesh>
           <boxGeometry args={[0.46, 0.32, 0.025]} />
-          <meshStandardMaterial color="#FFF6E2" roughness={0.8} emissive="#FFF0CC" emissiveIntensity={0.35} />
+          <meshStandardMaterial color="#EFE6D4" roughness={0.9} />
         </mesh>
         {/* a aba do envelope (dos dois lados) */}
         {[1, -1].map((lado) => (
           <mesh key={lado} position={[0, 0.03, lado * 0.014]} rotation={[0, lado === 1 ? 0 : Math.PI, Math.PI]}>
             <circleGeometry args={[0.24, 3, Math.PI / 2]} />
-            <meshStandardMaterial color="#F3E3C0" roughness={0.8} />
+            <meshStandardMaterial color="#E4D8C2" roughness={0.9} />
           </mesh>
         ))}
         {/* selo de cera */}
         {[1, -1].map((lado) => (
           <mesh key={'s' + lado} position={[0, -0.04, lado * 0.017]} rotation-y={lado === 1 ? 0 : Math.PI}>
             <circleGeometry args={[0.055, 16]} />
-            <meshStandardMaterial color="#B0302A" emissive="#7A1612" emissiveIntensity={0.4} roughness={0.4} />
+            <meshStandardMaterial color="#9C2B25" roughness={0.5} />
           </mesh>
         ))}
-        <sprite scale={1.5}>
-          <spriteMaterial map={brilho} transparent depthWrite={false} blending={AdditiveBlending} opacity={0.85} />
+        <sprite ref={reflexo} position={[0.14, 0.08, 0.03]} scale={0.25}>
+          <spriteMaterial map={brilho} transparent depthWrite={false} blending={AdditiveBlending} opacity={0} />
         </sprite>
-        <Sparkles count={14} scale={1.3} size={4} speed={0.5} color="#FFE29A" />
       </group>
     </group>
   )
@@ -185,7 +196,7 @@ function Arara({ onPegou }: { onPegou: () => void }) {
       <group ref={modelo} scale={0.03}>
         <primitive object={copia} />
       </group>
-      <group scale={1.9}>
+      <group scale={1.6}>
         <Cartinha pegou={pegou} />
       </group>
       {/* área de toque bem maior que a arara (ela está voando) */}
