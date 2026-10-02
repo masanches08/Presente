@@ -6,6 +6,9 @@
 //  - mar.mp3      ← "Ocean Waves on a Tropical Beach.ogg" (CC0)
 //  - gaivota.mp3  ← "Gull 2.ogg" (domínio público)
 //  - sinos.mp3    ← "Windglockenspiel.Koshi.ogg" (CC0)
+//  - sabia1-2.mp3   ← "Mimus gilvus - Tropical Mockingbird XC251131.mp3" (sabiá-da-praia), Niels Krabbe, CC BY-SA 4.0
+//  - balanca*.mp3   ← "Polioptila plumbea - Tropical Gnatcatcher XC242996.mp3", Niels Krabbe, CC BY-SA 4.0
+//    (só os trechos em que o passarinho canta, recortados com filtro de fundo; não são gerados por este script)
 import { execFileSync } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'

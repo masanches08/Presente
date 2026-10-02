@@ -92,7 +92,7 @@ O site é um só e se adapta à tela. As cenas foram enquadradas pra uma tela de
 ## Som ambiente (`src/lib/ambiente.ts`)
 
 Bem baixinho, gravações reais com licença livre (Wikimedia Commons; créditos em `scripts/baixar-sons.mjs`):
-- mundo, lua de mel, fotos, cartinhas e dias: mar + uma gaivota de vez em quando (a faixa de passarinhos foi desligada: tinha grilo no fundo)
+- mundo, lua de mel, fotos, cartinhas e dias: mar + cantinhos soltos de passarinho (sabiá-da-praia e balança-rabo, a cada 6–16 s) + uma gaivota de vez em quando
 - casamento: mar mais suave + sinos de vento
 - casa: silêncio
 O som começa no primeiro toque (regra dos navegadores) e pausa quando sai do site. Botão de ligar/desligar no canto da tela inicial. Volume geral: `VOLUME`; a mistura de cada lugar: `MISTURA`.

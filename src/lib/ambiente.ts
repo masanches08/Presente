@@ -16,6 +16,10 @@ const MISTURA: Record<Ambiente, Record<Faixa, number>> = {
 }
 /** gaivota de vez em quando (só na praia), a cada X–Y segundos */
 const GAIVOTA: [number, number] = [35, 80]
+/** cantinhos de passarinho soltos (sabiá-da-praia e balança-rabo), só na praia, a cada X–Y segundos */
+const PASSARINHOS = ['sabia1', 'sabia2', 'balanca1', 'balanca3', 'balanca4', 'balanca5']
+const INTERVALO_PASSARINHO: [number, number] = [6, 16]
+const VOLUME_PASSARINHO = 0.3
 const EMENDA = 3 // segundos de cruzamento entre uma volta e outra de cada faixa
 
 let ctx: AudioContext | null = null
@@ -78,6 +82,27 @@ function agendarGaivota() {
   }, espera)
 }
 
+let timerPassarinho = 0
+function agendarPassarinho() {
+  window.clearTimeout(timerPassarinho)
+  const espera = (INTERVALO_PASSARINHO[0] + Math.random() * (INTERVALO_PASSARINHO[1] - INTERVALO_PASSARINHO[0])) * 1000
+  timerPassarinho = window.setTimeout(() => {
+    const prontos = PASSARINHOS.filter((p) => buffers.has(p))
+    if (ctx && geral && prontos.length && ambiente === 'praia' && ligado && document.visibilityState === 'visible') {
+      const src = ctx.createBufferSource()
+      src.buffer = buffers.get(prontos[Math.floor(Math.random() * prontos.length)])!
+      src.playbackRate.value = 0.94 + Math.random() * 0.12 // cada um um pouquinho diferente
+      const g = ctx.createGain()
+      g.gain.value = VOLUME_PASSARINHO * (0.6 + Math.random() * 0.4)
+      const pan = ctx.createStereoPanner()
+      pan.pan.value = Math.random() * 1.6 - 0.8
+      src.connect(g).connect(pan).connect(geral)
+      src.start()
+    }
+    agendarPassarinho()
+  }, espera)
+}
+
 async function iniciar() {
   if (iniciado) return
   iniciado = true
@@ -85,15 +110,17 @@ async function iniciar() {
   ctx = new Ctx()
   geral = ctx.createGain()
   geral.gain.value = 0
-  // abafa um pouco o agudo (chiado do mar): fica mais calmo
-  const abafar = ctx.createBiquadFilter()
-  abafar.type = 'lowpass'
-  abafar.frequency.value = 4500
-  geral.connect(abafar).connect(ctx.destination)
+  geral.connect(ctx.destination)
   for (const f of ['mar', 'passaros', 'sinos'] as Faixa[]) {
     const g = ctx.createGain()
     g.gain.value = MISTURA[ambiente][f]
-    g.connect(geral)
+    if (f === 'mar') {
+      // abafa um pouco o agudo do mar (chiado): fica mais calmo
+      const abafar = ctx.createBiquadFilter()
+      abafar.type = 'lowpass'
+      abafar.frequency.value = 4500
+      g.connect(abafar).connect(geral)
+    } else g.connect(geral)
     ganhos.set(f, g)
   }
   aplicarVolume()
@@ -114,6 +141,8 @@ async function iniciar() {
   }
   carregar('gaivota').catch(() => {})
   agendarGaivota()
+  for (const p of PASSARINHOS) carregar(p).catch(() => {})
+  agendarPassarinho()
 }
 
 function aplicarVolume() {
