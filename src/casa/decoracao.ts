@@ -297,7 +297,6 @@ export function decorarSuperior(a: Andar) {
   // ---------- quarto do menino 2: pêssego que vira amarelo-sol ----------
   pintar('degradeSol', 'x', -0.922, -8.99, -5.28)
   pintar('degradeSol', 'z', -8.994, -0.92, 4.8, [janela(1.5)])
-  desenho('arcoiris', [-7.65, y + 1.8, -0.916], 2.1, 1.7, P_Z)
   desenho('sol', [-8.99, y + 2.05, 3.65], 1.3, 1.3, P_X)
   desenho('nuvem', [-8.99, y + 2.3, -0.3], 0.8, 0.8, P_X)
   camaCasinha(em(a, [-7.95, y, 3.65], P_X), 1.0, 2.0, 'tecidoAmarelo', ['tecidoPessego', 'tecidoCeu'])
