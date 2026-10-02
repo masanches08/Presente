@@ -19,6 +19,7 @@ export const SO_BLOQUEIA = new Set([
   'latao', 'metal', 'espelho', 'tela', 'livroA', 'livroB', 'livroC', 'livroD',
   'brinquedoA', 'brinquedoB', 'brinquedoC', 'brinquedoD', 'brinquedoE', 'brinquedoF',
   'ceramica', 'vaso', 'vasoPreto', 'vela',
+  'pijama', 'esteto', 'estetoMetal', 'tamanco', 'tamancoSola', 'cracha', 'crachaCorpo',
 ])
 const EMITE: Record<string, { cor: string; forca: number }> = {
   luz: { cor: '#FFE2C0', forca: 9 }, // lâmpadas

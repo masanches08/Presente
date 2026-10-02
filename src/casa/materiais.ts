@@ -4,6 +4,7 @@ import { relevoReal, texReal } from '../lib/texturasReais'
 import { texBlocos, texFolhas, texJuta, texMadeira, texPedra, texReboco } from '../mundo/texturas'
 import { Y1, Y2 } from './construcao'
 import { texAzulejo, texMarmore, texPisoBanho } from './texturas'
+import { COR_ESTETO, texCracha, texPijama } from './texturasEnfermeira'
 import { texDegrade } from './texturasInfantis'
 
 /** Tamanho (m) de um "azulejo" de textura em cada material (usado pelo uvPlanar) */
@@ -29,6 +30,9 @@ export const ESCALAS: Record<string, number> = {
   degradeCeu: Y2 - Y1,
   degradeSol: Y2 - Y1,
   degradeFlor: Y2 - Y1,
+  // (peças com desenho próprio: mantêm as coordenadas que vieram com elas)
+  pijama: 0,
+  cracha: 0,
 }
 
 // tecidos: a trama vira um relevinho (não fica com cara de plástico)
@@ -142,6 +146,14 @@ export function criarMateriais() {
     tela: std('#101214', { roughness: 0.15, metalness: 0.4 }),
     luz: new MeshStandardMaterial({ color: '#FFF1D6', emissive: '#FFB45A', emissiveIntensity: 2.8 }),
     cupula: new MeshStandardMaterial({ color: '#FFF6E6', emissive: '#FFC47A', emissiveIntensity: 1.1, roughness: 0.9 }),
+    // coisinhas de enfermeira (enfermeira.ts)
+    pijama: new MeshStandardMaterial({ map: texPijama(), alphaTest: 0.5, side: DoubleSide, roughness: 0.95, ...relevoReal('poly_wool_herringbone', 0.25, [5, 5]) }),
+    esteto: std(COR_ESTETO, { roughness: 0.35 }),
+    estetoMetal: std('#D7DADC', { roughness: 0.18, metalness: 0.85 }),
+    tamanco: std('#E7A9B6', { roughness: 0.5, side: DoubleSide }),
+    tamancoSola: std('#F5F0EA', { roughness: 0.7 }),
+    cracha: new MeshStandardMaterial({ map: texCracha(), roughness: 0.3 }),
+    crachaCorpo: std('#F3F2EE', { roughness: 0.3 }),
     // plantas e flores (versões sem vento, porque aqui dentro não venta)
     folhas: new MeshStandardMaterial({ map: texFolhas(), vertexColors: true, alphaTest: 0.5, side: DoubleSide, roughness: 0.75 }),
     rosas: materialRosas().clone(),

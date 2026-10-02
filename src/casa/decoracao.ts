@@ -42,6 +42,7 @@ import {
   vasoSanitario,
   type Andar,
 } from './moveis'
+import { enfermeiraNaSala, enfermeiraNaSuite } from './enfermeira'
 
 const PI = Math.PI
 const X9 = 8.93 // face de dentro da parede da direita (com um respiro)
@@ -77,6 +78,7 @@ export function decorarTerreo(a: Andar) {
   centro.caixa('livroC', 0.1, 0.4, 0.42, 0.46, -0.25, -0.05)
   centro.caixa('livroB', 0.12, 0.38, 0.46, 0.49, -0.23, -0.07)
   centro.cil('luz', 0.25, 0.42, 0.52, 0.2, 0.035)
+  enfermeiraNaSala(a, [0.75, y, 0.7], 0.42) // o crachá dela, esquecido na mesinha
   const lat = em(a, [-1.55, y, 2.45])
   mesaLateral(lat)
   lat.modelo('suculenta', 0.1, 0.55, -0.08, 0.2)
@@ -205,6 +207,8 @@ export function decorarSuperior(a: Andar) {
   const pe = em(a, [0.5, y, -11.85])
   pe.caixa('tecidoSalvia', -0.9, 0.9, 0.3, 0.48, -0.22, 0.22)
   for (const x of [-0.82, 0.82]) pe.caixa('latao', x - 0.02, x + 0.02, 0, 0.3, -0.2, 0.2)
+  // ela acabou de chegar do plantão: pijama cirúrgico jogado no banco, estetoscópio e tamancos
+  enfermeiraNaSuite(a, [0.5, y, -11.85])
   lustre(em(a, [0.5, 0, -11.2]), Y2 - 0.9, Y2)
 
   // lareira de mármore com um quadro grande em cima, e a salinha de frente pra ela
