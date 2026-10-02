@@ -9,6 +9,7 @@ import { Login } from './components/Login'
 import { Marcadores } from './components/Marcadores'
 import { Petalas } from './components/Petalas'
 import { PistaEncontrada } from './components/PistaEncontrada'
+import { SomAmbiente } from './components/SomAmbiente'
 import { useHoje } from './hooks/useHoje'
 import { useSessao } from './hooks/useSessao'
 import { irPara, useRota } from './hooks/useRota'
@@ -89,6 +90,9 @@ export default function App() {
 
       {/* dia especial (aniversário dela ou dia 24): o "momento" de abertura */}
       {celebracao && <Celebracao key={celebracao.tipo} celebracao={celebracao} visivel={liberado} />}
+
+      {/* som ambiente: casa em silêncio, casamento com sinos de vento, o resto com mar e passarinhos */}
+      <SomAmbiente ambiente={naCasa ? 'silencio' : noCasamento ? 'casamento' : 'praia'} botaoVisivel={liberado && !foco && !Pagina && !naCasa && !noCasamento && !naLuaDeMel && !pista} />
 
       {/* ela pegou a cartinha da arara: um segredo da lua de mel foi desbloqueado */}
       <AnimatePresence>
