@@ -40,8 +40,9 @@ function janela(o: Obra, x: number, y: number, z: number, w: number, h: number, 
   }
   // peitoril
   barra(w + 0.3, 0.06, 0, -h / 2 - e - 0.03, 0.2)
+  // o vidro aceso fica 1–3 cm À FRENTE da parede (antes encostava nela e as duas "brigavam", piscando ao girar)
   const vidro = new BoxGeometry(w, h, 0.02)
-  vidro.translate(0, 0, -0.03)
+  vidro.translate(0, 0, 0)
   for (const g of [...pecas, vidro]) {
     g.rotateY(giro)
     g.translate(x, y, z)
@@ -201,7 +202,7 @@ function materiais() {
     porta: new MeshStandardMaterial({ color: '#A85A2E', map: rep(texMadeira()), roughness: 0.45 }),
     concreto: new MeshStandardMaterial({ color: '#E9E4DB', map: rep(texPedra()), roughness: 0.9 }),
     // janelas acesas por dentro, bem aconchegante
-    vidro: new MeshStandardMaterial({ color: '#FFD59A', emissive: '#FFA64D', emissiveIntensity: 1.25, roughness: 0.2 }),
+    vidro: new MeshStandardMaterial({ color: '#FFD59A', emissive: '#FFA64D', emissiveIntensity: 1.25, roughness: 0.2, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }),
     luz: new MeshStandardMaterial({ color: '#FFF1D6', emissive: '#FFB45A', emissiveIntensity: 3.2 }),
   }
   return mats
@@ -214,7 +215,7 @@ export function Casa(props: Props) {
   return (
     <group {...props}>
       {Object.entries(partes).map(([nome, geo]) => (
-        <mesh key={nome} geometry={geo} material={m[nome]} castShadow={nome !== 'vidro' && nome !== 'luz'} receiveShadow />
+        <mesh key={nome} geometry={geo} material={m[nome]} castShadow={nome !== 'vidro' && nome !== 'luz'} receiveShadow={nome !== 'vidro' && nome !== 'luz'} />
       ))}
       {/* vasos pretos com topiárias na entrada */}
       {[-1, 1].map((lado) => (
