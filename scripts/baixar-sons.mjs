@@ -4,7 +4,6 @@
 //
 // Créditos:
 //  - mar.mp3      ← "Ocean Waves on a Tropical Beach.ogg" (CC0)
-//  - passaros.mp3 ← "Reggelirigók.ogg" (domínio público)
 //  - gaivota.mp3  ← "Gull 2.ogg" (domínio público)
 //  - sinos.mp3    ← "Windglockenspiel.Koshi.ogg" (CC0)
 import { execFileSync } from 'node:child_process'
@@ -15,7 +14,7 @@ import ffmpeg from 'ffmpeg-static'
 // arquivo do Commons → [nome no site, começo (s), duração (s), qualidade]
 const LISTA = {
   'Ocean Waves on a Tropical Beach.ogg': ['mar', 40, 75, '56k'],
-  'Reggelirigók.ogg': ['passaros', 20, 60, '48k'],
+  // ('Reggelirigók.ogg', passarinhos: tirado, tinha grilo no fundo)
   'Gull 2.ogg': ['gaivota', 0, 6, '48k'],
   'Windglockenspiel.Koshi.ogg': ['sinos', 2, 54, '56k'],
 }

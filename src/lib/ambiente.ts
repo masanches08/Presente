@@ -5,12 +5,12 @@
 export type Ambiente = 'praia' | 'casamento' | 'silencio'
 
 /** Volume geral (bem baixo de propósito) */
-const VOLUME = 0.32
+const VOLUME = 0.12
 
 type Faixa = 'mar' | 'passaros' | 'sinos'
 // quanto de cada faixa em cada lugar
 const MISTURA: Record<Ambiente, Record<Faixa, number>> = {
-  praia: { mar: 0.7, passaros: 0.28, sinos: 0 },
+  praia: { mar: 0.7, passaros: 0, sinos: 0 }, // (a gravação de passarinhos tinha grilo no fundo: desligada)
   casamento: { mar: 0.5, passaros: 0, sinos: 0.42 },
   silencio: { mar: 0, passaros: 0, sinos: 0 },
 }
@@ -85,7 +85,11 @@ async function iniciar() {
   ctx = new Ctx()
   geral = ctx.createGain()
   geral.gain.value = 0
-  geral.connect(ctx.destination)
+  // abafa um pouco o agudo (chiado do mar): fica mais calmo
+  const abafar = ctx.createBiquadFilter()
+  abafar.type = 'lowpass'
+  abafar.frequency.value = 4500
+  geral.connect(abafar).connect(ctx.destination)
   for (const f of ['mar', 'passaros', 'sinos'] as Faixa[]) {
     const g = ctx.createGain()
     g.gain.value = MISTURA[ambiente][f]
@@ -100,7 +104,8 @@ async function iniciar() {
     ;(window as unknown as { __som?: unknown }).__som = { ctx, geral, ganhos, medidor, buffers }
   }
   // carrega e começa cada faixa assim que chegar (o mar primeiro)
-  for (const f of ['mar', 'passaros', 'sinos'] as Faixa[]) {
+  // (só carrega as faixas que algum lugar usa)
+  for (const f of (['mar', 'passaros', 'sinos'] as Faixa[]).filter((f) => Object.values(MISTURA).some((m) => m[f] > 0))) {
     try {
       emLoop(f, await carregar(f))
     } catch {
