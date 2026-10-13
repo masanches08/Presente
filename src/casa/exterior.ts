@@ -1,4 +1,4 @@
-import { BoxGeometry, CylinderGeometry, ExtrudeGeometry, PlaneGeometry, Shape, TorusGeometry, Vector3 } from 'three'
+import { BoxGeometry, CylinderGeometry, ExtrudeGeometry, PlaneGeometry, Shape, TorusGeometry } from 'three'
 import { Obra } from '../mundo/obra'
 import { guardaCorpo } from './construcao'
 import { cadeira, em, planta, sofa, type Andar, type L } from './moveis'
@@ -6,7 +6,7 @@ import { cadeira, em, planta, sofa, type Andar, type L } from './moveis'
 // ======================================================================
 // O quintal "americano": lote cercado, gramado grande, área coberta,
 // piscina com hidromassagem, fogueira, cozinha externa, playground,
-// cama elástica, horta, rede e casinha de ferramentas.
+// cama elástica, rede e casinha de ferramentas.
 // (metros; a casa ocupa x -9..9, z -9..7; os fundos vão até z = -46)
 // ======================================================================
 
@@ -23,7 +23,8 @@ export const FOGUEIRA = { x: -15, z: -27.5, r: 3.7 }
 export const CAMA_ELASTICA = { x: -2.5, z: -37.5, r: 2.1 }
 export const CASA_ARVORE = { x: -19.5, z: -39.5 }
 export const PLAYGROUND: Ret = { x0: -17.5, x1: -8.5, z0: -44, z1: -33 }
-export const HORTA: Ret = { x0: 12.5, x1: 20.5, z0: -44, z1: -35 }
+/** Casinha de ferramentas (a porta dupla olha pro meio do quintal, -x) */
+export const CASINHA = { x: 19.8, z: -30.5 }
 export const REDE = { x0: 3.6, x1: 8.8, z: -42.5 }
 export const LAJE_PEGADAS = { z: 11.6, w: 3.4, d: 1.7 }
 
@@ -41,7 +42,7 @@ export function semGrama(x: number, z: number) {
     dentro(ALPENDRE) ||
     dentro(DECK) ||
     dentro(GOURMET) ||
-    dentro(HORTA, 0) ||
+    dentro({ x0: CASINHA.x - 3.9, x1: CASINHA.x + 1.9, z0: CASINHA.z - 2.0, z1: CASINHA.z + 2.0 }, 0) ||
     perto(FOGUEIRA.x, FOGUEIRA.z, FOGUEIRA.r + 0.2) ||
     perto(CAMA_ELASTICA.x, CAMA_ELASTICA.z, CAMA_ELASTICA.r + 0.1) ||
     perto(-12.5, -37, 1.4) // caixa de areia
@@ -80,6 +81,174 @@ function adirondack(l: L) {
 }
 
 /** Cerca de madeira alta (tábuas) com mourões e acabamento em cima */
+/**
+ * Casinha de ferramentas americana: tábuas de madeira em pé com mata-juntas, acabamento branco,
+ * telhado de duas águas com cumeeira e catavento, porta dupla de celeiro com "X", janelas com floreira,
+ * lampião, ferramentas encostadas, carrinho de mão e regador.
+ */
+function casinhaFerramentas(a: Andar) {
+  const l = em(a, [CASINHA.x, 0, CASINHA.z], -Math.PI / 2) // frente (+z) olhando pro meio do quintal
+  const W = 1.6 // meia largura
+  const D = 1.3 // meia profundidade
+  const Y0 = 0.14 // em cima da base
+  const YW = 2.15 // topo das paredes
+  const CUME = 1.05 // altura do telhado acima das paredes
+  const inc = Math.atan(CUME / W)
+  const ord = (p: number, q: number): [number, number] => (p < q ? [p, q] : [q, p])
+  const caixa = (m: string, x0: number, x1: number, y0: number, y1: number, z0: number, z1: number) => l.caixa(m, ...ord(x0, x1), y0, y1, ...ord(z0, z1))
+
+  // base de concreto e rampinha de madeira até a porta
+  l.caixa('concreto', -W - 0.12, W + 0.12, 0, Y0, -D - 0.12, D + 0.12)
+  l.bloco('madeiraEscura', 0, Y0 / 2, D + 0.42, 1.5, 0.05, 0.62, Math.atan(Y0 / 0.6))
+
+  // corpo de tábuas em pé + mata-juntas escuras a cada 32 cm
+  l.caixa('cerca', -W, W, Y0, YW, -D, D)
+  for (const s of [-1, 1]) {
+    for (let z = -D + 0.25; z < D - 0.15; z += 0.32) caixa('cercaEscura', s * W, s * (W + 0.02), Y0 + 0.12, YW - 0.12, z - 0.025, z + 0.025)
+    for (let x = -W + 0.25; x < W - 0.15; x += 0.32) {
+      if (s > 0 && Math.abs(x) < 0.95) continue // (a porta)
+      caixa('cercaEscura', x - 0.025, x + 0.025, Y0 + 0.12, YW - 0.12, s * D, s * (D + 0.02))
+    }
+  }
+  // acabamento branco: rodapé, faixa de cima e cantoneiras
+  l.caixa('madeiraBranca', -W - 0.03, W + 0.03, Y0, Y0 + 0.12, -D - 0.03, D + 0.03)
+  l.caixa('madeiraBranca', -W - 0.03, W + 0.03, YW - 0.12, YW, -D - 0.03, D + 0.03)
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) caixa('madeiraBranca', sx * (W - 0.08), sx * (W + 0.04), Y0, YW, sz * (D - 0.08), sz * (D + 0.04))
+
+  // oitões (triângulos da frente e de trás) e telhado de duas águas com beiral
+  for (const lado of [1, -1]) {
+    const t = new Shape()
+    t.moveTo(-W, 0)
+    t.lineTo(W, 0)
+    t.lineTo(0, CUME)
+    t.closePath()
+    const g = new ExtrudeGeometry(t, { depth: 0.1, bevelEnabled: false })
+    g.translate(0, YW, lado > 0 ? D - 0.1 : -D)
+    l.put('cerca', g)
+  }
+  const B = 0.28 // beiral
+  const comp = (W + B) / Math.cos(inc)
+  for (const s of [-1, 1]) {
+    const cx = (s * (W + B)) / 2
+    const cy = YW + CUME - ((W + B) / 2) * Math.tan(inc) + 0.04
+    l.bloco('telhado', cx, cy, 0, comp, 0.07, 2 * D + 0.6, 0, 0, -s * inc)
+    // testeira branca na frente e atrás
+    for (const sz of [-1, 1]) l.bloco('madeiraBranca', cx, cy - 0.05, sz * (D + 0.31), comp, 0.16, 0.04, 0, 0, -s * inc)
+  }
+  l.bloco('preto', 0, YW + CUME + 0.08, 0, 0.18, 0.06, 2 * D + 0.64)
+
+  // cupulazinha no meio da cumeeira com catavento
+  const yc = YW + CUME
+  l.caixa('madeiraBranca', -0.2, 0.2, yc - 0.05, yc + 0.32, -0.2, 0.2)
+  for (const s of [-1, 1]) for (let y = yc + 0.05; y < yc + 0.28; y += 0.07) caixa('cercaEscura', s * 0.2, s * 0.215, y, y + 0.03, -0.13, 0.13)
+  l.cone('telhado', 0, yc + 0.32, yc + 0.58, 0, 0.32, 4)
+  l.cil('preto', 0, yc + 0.58, yc + 0.95, 0, 0.012)
+  l.bloco('preto', 0, yc + 0.85, 0, 0.012, 0.012, 0.42)
+  l.bloco('preto', 0, yc + 0.85, 0.2, 0.012, 0.1, 0.1, Math.PI / 4)
+  l.bloco('preto', 0, yc + 0.85, -0.2, 0.012, 0.14, 0.08)
+
+  // porta dupla de celeiro: tábuas, moldura branca e "X" embaixo, dobradiças compridas e puxadores
+  const yp0 = Y0 + 0.02
+  const yp1 = 1.98
+  l.caixa('cerca', -0.74, 0.74, yp0, yp1, D, D + 0.03)
+  l.caixa('cercaEscura', -0.006, 0.006, yp0, yp1, D + 0.03, D + 0.035)
+  l.caixa('madeiraBranca', -0.86, 0.86, yp1, yp1 + 0.12, D, D + 0.045)
+  for (const s of [-1, 1]) caixa('madeiraBranca', s * 0.74, s * 0.86, yp0, yp1, D, D + 0.045)
+  const ym = 1.12
+  for (const s of [-1, 1]) {
+    const xc = s * 0.37
+    caixa('madeiraBranca', xc - 0.33, xc + 0.33, yp0, yp0 + 0.09, D + 0.03, D + 0.055)
+    caixa('madeiraBranca', xc - 0.33, xc + 0.33, yp1 - 0.09, yp1, D + 0.03, D + 0.055)
+    caixa('madeiraBranca', xc - 0.33, xc + 0.33, ym - 0.045, ym + 0.045, D + 0.03, D + 0.055)
+    caixa('madeiraBranca', xc - 0.33, xc - 0.25, yp0, yp1, D + 0.03, D + 0.055)
+    caixa('madeiraBranca', xc + 0.25, xc + 0.33, yp0, yp1, D + 0.03, D + 0.055)
+    const dx = 0.5
+    const dy = ym - 0.045 - (yp0 + 0.09)
+    const ang = Math.atan2(dy, dx)
+    for (const r of [ang, -ang]) l.bloco('madeiraBranca', xc, (ym - 0.045 + yp0 + 0.09) / 2, D + 0.045, Math.hypot(dx, dy), 0.07, 0.02, 0, 0, r)
+    for (const y of [0.45, 1.65]) caixa('preto', s * 0.74, s * 0.42, y - 0.022, y + 0.022, D + 0.055, D + 0.065)
+    caixa('preto', s * 0.06, s * 0.085, 1.0, 1.28, D + 0.055, D + 0.085)
+  }
+
+  // janela no oitão da frente (vidro escuro, moldura branca em cruz)
+  const janela = (x0: number, x1: number, y0: number, y1: number, z: number) => {
+    l.caixa('tela', x0, x1, y0, y1, z, z + 0.01)
+    l.caixa('madeiraBranca', x0 - 0.06, x1 + 0.06, y0 - 0.06, y0, z, z + 0.04)
+    l.caixa('madeiraBranca', x0 - 0.06, x1 + 0.06, y1, y1 + 0.06, z, z + 0.04)
+    l.caixa('madeiraBranca', x0 - 0.06, x0, y0, y1, z, z + 0.04)
+    l.caixa('madeiraBranca', x1, x1 + 0.06, y0, y1, z, z + 0.04)
+    l.caixa('madeiraBranca', (x0 + x1) / 2 - 0.015, (x0 + x1) / 2 + 0.015, y0, y1, z, z + 0.025)
+    l.caixa('madeiraBranca', x0, x1, (y0 + y1) / 2 - 0.015, (y0 + y1) / 2 + 0.015, z, z + 0.025)
+  }
+  janela(-0.26, 0.26, YW + 0.12, YW + 0.5, D)
+
+  // janelas nas laterais, cada uma com floreira e florzinhas
+  for (const s of [-1, 1]) {
+    const x = s * W
+    caixa('tela', x, x + s * 0.01, 1.0, 1.62, -0.42, 0.42)
+    caixa('madeiraBranca', x, x + s * 0.04, 0.94, 1.0, -0.48, 0.48)
+    caixa('madeiraBranca', x, x + s * 0.04, 1.62, 1.68, -0.48, 0.48)
+    for (const z of [-0.45, 0.45]) caixa('madeiraBranca', x, x + s * 0.04, 1.0, 1.62, z - 0.03, z + 0.03)
+    caixa('madeiraBranca', x, x + s * 0.025, 1.0, 1.62, -0.015, 0.015)
+    caixa('madeiraBranca', x, x + s * 0.025, 1.295, 1.325, -0.42, 0.42)
+    // floreira
+    caixa('madeiraBranca', x, x + s * 0.24, 0.74, 0.92, -0.5, 0.5)
+    caixa('terra', x + s * 0.03, x + s * 0.21, 0.92, 0.93, -0.47, 0.47)
+    for (const z of [-0.3, 0, 0.3]) {
+      a.tufos.push({ centro: l.mundo(x + s * 0.12, 0.98, z), raio: 0.12 })
+      l.flores(x + s * 0.12, 1.0, z, 0.13, 6)
+    }
+  }
+
+  // lampião preto do lado da porta
+  for (const s of [-1, 1]) {
+    const x = s * 1.08
+    l.caixa('preto', x - 0.06, x + 0.06, 1.62, 1.86, D, D + 0.03)
+    l.caixa('preto', x - 0.015, x + 0.015, 1.72, 1.75, D + 0.03, D + 0.14)
+    l.caixa('cupula', x - 0.06, x + 0.06, 1.6, 1.78, D + 0.1, D + 0.22)
+    l.caixa('preto', x - 0.08, x + 0.08, 1.78, 1.81, D + 0.08, D + 0.24)
+  }
+
+  // ferramentas encostadas na parede: ancinho e pá
+  l.bloco('madeira', 1.28, 0.78, D + 0.17, 0.03, 1.55, 0.03, -0.2)
+  l.caixa('metal', 1.08, 1.48, 0.02, 0.06, D + 0.31, D + 0.35)
+  for (let x = 1.1; x <= 1.47; x += 0.06) l.caixa('metal', x - 0.007, x + 0.007, 0, 0.04, D + 0.33, D + 0.38)
+  l.bloco('madeira', 1.5, 0.72, D + 0.15, 0.03, 1.4, 0.03, -0.2)
+  l.bloco('metal', 1.5, 0.1, D + 0.29, 0.22, 0.28, 0.02, -0.2)
+  l.caixa('preto', 1.44, 1.56, 1.42, 1.45, D + 0.01, D + 0.03)
+
+  // carrinho de mão e regador na frente, à esquerda da porta
+  const pc = l.mundo(-1.35, 0, D + 1.0)
+  const car = em(a, [pc.x, 0, pc.z], -Math.PI / 2 + 0.6)
+  car.bloco('brinquedoD', 0, 0.48, 0.05, 0.56, 0.22, 0.74, -0.12)
+  car.bloco('terra', 0, 0.58, 0.05, 0.5, 0.03, 0.68, -0.12) // cheio de terra
+  car.esfera('preto', 0, 0.17, 0.55, 0.17, 0.35, 1, 1)
+  for (const x of [-0.24, 0.24]) {
+    car.bloco('madeira', x, 0.42, -0.25, 0.04, 0.04, 1.1, -0.15)
+    car.bloco('metal', x, 0.2, -0.2, 0.025, 0.36, 0.025)
+  }
+  const pr = l.mundo(-0.7, 0, D + 0.95)
+  const reg = em(a, [pr.x, 0, pr.z], 0.8)
+  reg.cil('metal', 0, 0, 0.26, 0, 0.11, 0.1, 18)
+  reg.bloco('metal', 0.17, 0.22, 0, 0.26, 0.025, 0.025, 0, 0, 0.75)
+  reg.aro('metal', -0.02, 0.3, 0, 0.07, 0.012)
+
+  // vasos de barro com planta dos dois lados da rampa e moitinhas nos cantos de trás
+  for (const s of [-1, 1]) {
+    const p = l.mundo(s * 0.9, 0, D + 0.25)
+    planta(a, p.x, p.z, 'arbusto', 0.65, 'vaso')
+    a.tufos.push({ centro: l.mundo(s * (W + 0.25), 0.3, -D + 0.1), raio: 0.38 })
+    a.tufos.push({ centro: l.mundo(s * (W + 0.2), 0.25, -D + 0.75), raio: 0.3 })
+  }
+  // pedras de pisar até a porta
+  for (const [x, z] of [
+    [0.1, D + 1.0],
+    [-0.12, D + 1.55],
+    [0.08, D + 2.1],
+  ])
+    l.cil('pedra', x, 0, 0.04, z, 0.25, 0.25, 14)
+}
+
 function cerca(o: Obra, eixo: 'x' | 'z', fixo: number, de: number, ate: number, portao?: number) {
   const trecho = (a0: number, a1: number) => {
     if (eixo === 'x') o.caixa('cerca', [a0, a1], [0, 1.8], [fixo - 0.03, fixo + 0.03])
@@ -372,32 +541,8 @@ export function montarExterior(a: Andar) {
     o.add(['brinquedoA', 'brinquedoB', 'brinquedoC'][i % 3], b)
   }
 
-  // ---------- horta em canteiros elevados + casinha de ferramentas ----------
-  const H = HORTA
-  for (let i = 0; i < 3; i++) {
-    const x0 = H.x0 + 0.3 + i * 2.6
-    const x1 = x0 + 1.6
-    o.caixa('madeira', [x0, x1], [0, 0.5], [H.z0 + 0.5, H.z1 - 2.6])
-    o.caixa('terra', [x0 + 0.08, x1 - 0.08], [0.5, 0.52], [H.z0 + 0.58, H.z1 - 2.68])
-    for (let z = H.z0 + 1.0; z < H.z1 - 2.8; z += 0.6)
-      for (const dx of [0.4, 1.2]) a.tufos.push({ centro: new Vector3(x0 + dx, 0.72, z), raio: 0.22 + ((i + z) % 2) * 0.05 })
-  }
-  // casinha (paredes claras, telhado escuro como a casa)
-  const cs = { x: 19.8, z: -30.5 }
-  o.caixa('fachada', [cs.x - 1.6, cs.x + 1.6], [0, 2.3], [cs.z - 1.3, cs.z + 1.3])
-  o.add('telhado', (() => {
-    const s = new Shape()
-    s.moveTo(-1.95, 0)
-    s.lineTo(1.95, 0)
-    s.lineTo(0, 1.1)
-    s.closePath()
-    const g = new ExtrudeGeometry(s, { depth: 3.0, bevelEnabled: false })
-    g.rotateY(Math.PI / 2)
-    g.translate(cs.x - 1.5, 2.3, cs.z)
-    return g
-  })())
-  o.caixa('madeiraEscura', [cs.x - 1.62, cs.x - 1.58], [0, 2.0], [cs.z - 0.55, cs.z + 0.55])
-  o.caixa('vidro', [cs.x - 1.63, cs.x - 1.6], [1.2, 1.8], [cs.z + 0.75, cs.z + 1.1])
+  // ---------- casinha de ferramentas ----------
+  casinhaFerramentas(a)
 
   // ---------- rede entre duas árvores ----------
   const R = REDE
