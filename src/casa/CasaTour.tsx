@@ -11,6 +11,7 @@ import { TOUR } from '../data/tour'
 import { CartinhaEstante } from './CartinhaEstante'
 import { CenaCasa, type Qualidade } from './CenaCasa'
 import { CAMERAS, VISTA_LIVRE } from './paradas'
+import { TvSuite } from './TvSuite'
 
 type Andar = 'tudo' | 'terreo' | 'superior'
 
@@ -35,6 +36,9 @@ export default function CasaTour({ onSair }: { onSair: () => void }) {
     return { ...c, recuoMax: c.onde === 'lá fora' ? 1.3 : 1 }
   }, [parada.id])
   const ocultos = livre ? { superior: andar === 'terreo', teto: andar !== 'tudo' } : { superior: false, teto: false }
+  // a TV da suíte toca quando a câmera chega lá; o vídeo começa a baixar uma parada antes
+  const naSuite = !livre && parada.id === 'suite'
+  const pertoDaSuite = i >= TOUR.findIndex((p) => p.id === 'suite') - 1
 
   return (
     <motion.div className={`fixed inset-0 z-40 bg-[#DCEBF4] ${CLASSE_CANVAS}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.6 }}>
@@ -57,6 +61,7 @@ export default function CasaTour({ onSair }: { onSair: () => void }) {
         <CameraTour cam={cam} livre={livre} vistaLivre={VISTA_LIVRE} distancia={[3, 90]} onPiscar={piscar} fovMax={84} recuoMax={1.3} />
         {/* segredo 2 da lua de mel: a cartinha escondida na estante do mezanino */}
         <CartinhaEstante oculto={ocultos.superior} onPegou={() => setCartinha(true)} />
+        <TvSuite ligada={naSuite} carregar={pertoDaSuite} oculto={ocultos.superior} />
       </Canvas>
       <Vinheta forca={0.3} />
 

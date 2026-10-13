@@ -10,6 +10,8 @@ export interface Camera {
   onde: 'lá fora' | 'térreo' | '2º andar'
   /** Luminárias acesas nesse cômodo (no máximo 2) */
   luzes?: V3[]
+  /** Depois de chegar, a câmera vira devagar (na mesma parada) pra essa segunda vista */
+  depois?: { pos: V3; alvo: V3; espera: number }
 }
 
 // Onde a câmera fica (pos), pra onde ela olha (alvo) e quais luzes acendem em cada parada do tour
@@ -28,7 +30,15 @@ export const CAMERAS: Record<ParadaId, Camera> = {
   menino1: { pos: [-5.6, 5.0, -6.4], alvo: [-8.3, 3.9, -1.8], grupo: 'q1', onde: '2º andar', luzes: [[-7.1, 5.5, -3.9]] },
   menino2: { pos: [-5.65, 5.0, 5.4], alvo: [-8.2, 3.9, 0.4], grupo: 'q2', onde: '2º andar', luzes: [[-7.1, 5.5, 1.9]] },
   menina: { pos: [5.6, 5.0, -6.3], alvo: [8.3, 3.9, -1.9], grupo: 'q3', onde: '2º andar', luzes: [[7.0, 5.5, -3.9]] },
-  suite: { pos: [4.15, 5.55, -15.55], alvo: [-1.3, 3.8, -10.2], grupo: 'q4', onde: '2º andar', luzes: [[0.5, 5.9, -11.2], [-4.4, 4.0, -12.4]] },
+  // a vista de sempre da suíte; depois de uns segundos a câmera vira devagar pra TV na frente da cama
+  suite: {
+    pos: [4.15, 5.55, -15.55],
+    alvo: [-1.3, 3.8, -10.2],
+    depois: { pos: [2.9, 5.45, -9.6], alvo: [0.5, 4.4, -15.3], espera: 2.5 },
+    grupo: 'q4',
+    onde: '2º andar',
+    luzes: [[0.5, 5.9, -11.2], [-4.4, 4.0, -12.4]],
+  },
 }
 
 /** Vista de cima pra "visão livre" (o lote inteiro) */

@@ -11,7 +11,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "fotos": "node scripts/converter-fotos.mjs",
-    "luz": "node scripts/luz/rodar.mjs"
+    "luz": "node scripts/luz/rodar.mjs",
+    "tv": "node scripts/video-tv.mjs"
   },
   "dependencies": {
     "@date-fns/tz": "^1.5.0",

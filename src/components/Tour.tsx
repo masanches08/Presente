@@ -17,6 +17,8 @@ export interface CamTour {
   grupo?: string
   /** Quanto a câmera pode recuar numa tela estreita (celular em pé). Dentro de casa, pouco: senão atravessa parede */
   recuoMax?: number
+  /** Depois de chegar, a câmera vira devagar (na mesma parada) pra uma segunda vista */
+  depois?: { pos: V3; alvo: V3; espera: number }
 }
 
 interface CameraTourProps {
@@ -114,31 +116,49 @@ export function CameraTour({
     anterior.current = cam
     const [px, py, pz] = recuar(cam.pos, cam.alvo, recuo)
     const [tx, ty, tz] = cam.alvo
+    const timers: number[] = []
+    // a segunda vista da parada (se tiver): a câmera vira devagarinho, sem piscar
+    const virarDepois = (atraso: number) => {
+      const d = cam.depois
+      if (!d) return
+      timers.push(
+        window.setTimeout(() => {
+          c.smoothTime = 2.2
+          c.setLookAt(...recuar(d.pos, d.alvo, recuo), ...d.alvo, true)
+        }, atraso + d.espera * 1000),
+      )
+    }
+    const limpar = () => timers.forEach((t) => clearTimeout(t))
     if (!ant) {
       // entrada de cinema
       c.setLookAt(px + ex, py + ey, pz + ez, tx, ty + 2, tz, false)
       c.smoothTime = duracaoEntrada
       c.setLookAt(px, py, pz, tx, ty, tz, true)
-      return
+      virarDepois(duracaoEntrada * 1000)
+      return limpar
     }
     const mesmoLugar = !cam.grupo || ant.grupo === cam.grupo
     if (mesmoLugar && !saiuDoLivre.current && !cortePendente.current) {
       onPiscar?.(false)
       c.smoothTime = 1.1
       c.setLookAt(px, py, pz, tx, ty, tz, true)
-      return
+      virarDepois(1100)
+      return limpar
     }
     saiuDoLivre.current = false
     cortePendente.current = true
     onPiscar?.(true)
-    const id = setTimeout(() => {
-      cortePendente.current = false
-      c.setLookAt(px, py + 0.3, pz, tx, ty + 0.35, tz, false)
-      c.smoothTime = 0.9
-      c.setLookAt(px, py, pz, tx, ty, tz, true)
-      onPiscar?.(false)
-    }, 420)
-    return () => clearTimeout(id)
+    timers.push(
+      window.setTimeout(() => {
+        cortePendente.current = false
+        c.setLookAt(px, py + 0.3, pz, tx, ty + 0.35, tz, false)
+        c.smoothTime = 0.9
+        c.setLookAt(px, py, pz, tx, ty, tz, true)
+        onPiscar?.(false)
+      }, 420),
+    )
+    virarDepois(420 + 900)
+    return limpar
   }, [cam, livre, onPiscar, vistaLivre, ex, ey, ez, duracaoEntrada, recuo, recuoLivre])
 
   return <CameraControls ref={ref} makeDefault />
