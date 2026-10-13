@@ -243,10 +243,10 @@ export function decorarSuperior(a: Andar) {
   const vidroFundo = em(a, [0, y, -15.84], P_Z)
   for (const x of [-3.2, 3.2]) cortina(vidroFundo, x, 0, 0.8, 0.05, Y2 - Y1 - 0.14)
 
-  // varanda: duas cadeiras e uma mesinha olhando a piscina
-  cadeira(em(a, [-1.1, y, -17.2], N_Z + 0.35), 'tecidoCreme')
-  cadeira(em(a, [1.1, y, -17.2], N_Z - 0.35), 'tecidoCreme')
-  mesaRedonda(em(a, [0, y, -17.35]), 0.3, 0.55)
+  // varanda: duas cadeiras juntinhas olhando a piscina (um pouco viradas uma pra outra) e a mesinha do lado
+  cadeira(em(a, [-0.4, y, -17.2], N_Z - 0.2), 'tecidoCreme')
+  cadeira(em(a, [0.4, y, -17.2], N_Z + 0.2), 'tecidoCreme')
+  mesaRedonda(em(a, [1.1, y, -17.3]), 0.3, 0.55)
   modelo(a, 'planta-arvore', -2.9, -17.6, 1.6, 4.1)
 
   // banheiro do casal: duas cubas, chuveiro amplo e mármore
