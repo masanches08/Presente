@@ -54,6 +54,8 @@ Pra ligar a sincronização:
 - `src/mundo/terreno.ts`: o formato do chão (colinas, praia, mar) e por onde passa o caminho
 - `src/mundo/Grama.tsx`, `Flores.tsx`, `Arvore.tsx`: a natureza (grama e flores balançando com o vento, árvores, coqueiros, borboletas)
 - `src/mundo/objetos/`: a casa, o altar do casamento, o correio, a árvore das fotos, o relógio de sol, a cerquinha, o barquinho da lua de mel e a quadra de futevôlei (`QuadraFtv.tsx`, na areia ao lado do casamento: 18 x 9 m, rede a 2,20 m, com cara de escolinha de praia: postes de eucalipto, fitas amarelas, bolas de futevôlei, tenda, cadeiras, bandeira do Brasil e bandeiras "FUTEVÔLEI")
+- `src/mundo/Horizonte.tsx`: enfeite do mar (dois veleiros e golfinhos pulando de vez em quando). Pra tirar: apague o arquivo e a linha `<Horizonte />` (e o import) em `Cena.tsx`
+- `src/mundo/obstaculos.ts`: as coisas altas do mundo (casa, árvores, coqueiros, casamento, quadra), pra os pássaros que passam não atravessarem nada. Se puser algo alto novo no mundo, acrescente aqui
 - `src/mundo/texturas.ts`: todas as texturas (telhas, folhas, flores...) são desenhadas no próprio código
 - `public/models/`: pássaros animados (modelos oficiais do three.js, licença MIT)
 
@@ -62,6 +64,7 @@ Pra ligar a sincronização:
 A tela "Bloqueado" tem 3 segredos pra ela achar pelo site, sem dica nenhuma (`src/data/luademel.ts`: o que cada um revela e onde fica escondido).
 - **Segredo 1, a arara:** de vez em quando passa uma arara no mundo com uma cartinha amarrada no pezinho (`src/mundo/Revoada.tsx`: pássaros que atravessam a tela de tempos em tempos, e cada arara tem uma chance de trazer a cartinha). Tocou nela: festa e "um segredo foi desbloqueado" (`src/components/PistaEncontrada.tsx`). Na próxima vez que ela entra na lua de mel, o cadeado daquele card quebra e mostra o passeio.
 - **Quando a arara da cartinha passa:** `ARARA_CARTINHA` em `src/data/luademel.ts` (1ª vez entre 20 e 45 s olhando o mundo, depois a cada 75–120 s, até ser pega; `ARARA_SEMPRE = true` faz ela voltar mesmo depois de pega, pra testar)
+- **Segredo 2, o hotel:** um envelopinho escondido na estante do mezanino (2º andar da casa), na 2ª prateleira de cima, entre o 2º e o 3º grupo de livros (`src/casa/CartinhaEstante.tsx`). Tocou nele: ele sai do vão e voa girando até a tela com um pozinho dourado. Aí ela tem que **segurar o selo de cera** até o anel dourado encher: o envelope treme, o selo racha e quebra em pedaços, e a carta sobe com o hotel (`src/components/CartinhaHotel.tsx`). O texto da carta fica em `CARTA_HOTEL` (`src/data/luademel.ts`); `ESTANTE_SEMPRE = true` deixa o envelope lá mesmo depois de aberto, pra testar
 - **Testar de novo do zero:** abra o site com `?resetar-pistas` (apaga os achados deste aparelho e do Supabase)
 - O que foi achado fica salvo no aparelho e no Supabase (tabela `desbloqueios`, em `supabase/desbloqueios.sql`)
 

@@ -15,14 +15,28 @@ function Cadeado({ className = '' }: { className?: string }) {
 
 type Estado = 'bloqueado' | 'quebrando' | 'aberto'
 
-/** Solzinho nascendo atrás da montanha (o ícone dos segredos já abertos) */
-function IconeSegredo({ className = '' }: { className?: string }) {
+/** O ícone de cada segredo já aberto (o desenho combina com o que ele revela) */
+function IconeSegredo({ id, className = '' }: { id: string; className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.4} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
-      <path d="M2.5 19.5h19" />
-      <path d="M4 19.5l5.2-7.5 3.3 4.2 2.4-2.9 5.1 6.2" />
-      <path d="M12 9.2a3.4 3.4 0 0 1 3.4 3.4" />
-      <path d="M12 4.2v1.6M17.6 6.6l-1.1 1.1M6.4 6.6l1.1 1.1" />
+      {id === 'hotel' ? (
+        // a sineta do balcão da recepção do hotel
+        <>
+          <path d="M3 18.5h18" />
+          <path d="M4.5 18.5a7.5 7.5 0 0 1 15 0" />
+          <path d="M12 11V9.2" />
+          <path d="M10.2 8.4h3.6" />
+          <path d="M7.6 15.4a4.6 4.6 0 0 1 2.6-2.8" />
+        </>
+      ) : (
+        // solzinho nascendo atrás da montanha (o Monte Batur)
+        <>
+          <path d="M2.5 19.5h19" />
+          <path d="M4 19.5l5.2-7.5 3.3 4.2 2.4-2.9 5.1 6.2" />
+          <path d="M12 9.2a3.4 3.4 0 0 1 3.4 3.4" />
+          <path d="M12 4.2v1.6M17.6 6.6l-1.1 1.1M6.4 6.6l1.1 1.1" />
+        </>
+      )}
     </svg>
   )
 }
@@ -102,7 +116,7 @@ function CardSegredo({ s, i, estado, onAbrir }: { s: Segredo; i: number; estado:
       {estado === 'quebrando' && <CadeadoQuebrando />}
       {aberto && (
         <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6 }} className="flex flex-col items-center gap-1.5">
-          <IconeSegredo className="size-7" />
+          <IconeSegredo id={s.id} className="size-7" />
           <span className="font-serif text-[0.95rem] leading-tight font-medium">{s.nome}</span>
         </motion.div>
       )}
@@ -128,7 +142,7 @@ function SegredoAberto({ s, achados, onFechar }: { s: Segredo; achados: number; 
         onClick={(e) => e.stopPropagation()}
         className="w-full max-w-sm rounded-[30px] bg-gradient-to-b from-[#FFF6DF] to-[#F2DAA4] px-7 pt-9 pb-7 text-center text-[#3A2A14] shadow-2xl"
       >
-        <IconeSegredo className="mx-auto size-12 text-[#A8742A]" />
+        <IconeSegredo id={s.id} className="mx-auto size-12 text-[#A8742A]" />
         <p className="mt-4 text-[11px] tracking-[0.35em] text-[#A8742A] uppercase">desbloqueado</p>
         <h3 className="mt-2 font-serif text-[2.1rem] leading-tight font-medium">{s.nome}</h3>
         <p className="mt-4 font-serif text-lg leading-snug text-[#3A2A14]/75 italic">{s.frase}</p>

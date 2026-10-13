@@ -64,6 +64,9 @@ export function Controles({ foco }: { foco: PontoId | null }) {
     const emIntro = performance.now() < introAte.current
     c.smoothTime = emIntro ? 2.4 : 0.85
     c.setLookAt(pos.x, pos.y, pos.z, alvo.x, alvo.y, alvo.z, true)
+    // o giro sozinho (e o dedo) vão somando voltas no ângulo; sem isso a câmera "desenrolava"
+    // essas voltas todas no voo, dando um 360. Assim ela vai sempre pelo lado mais curto.
+    c.normalizeRotations()
     ultimoToque.current = performance.now() + (emIntro ? 3000 : 0)
   }, [foco, fator])
 

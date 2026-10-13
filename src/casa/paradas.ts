@@ -33,19 +33,3 @@ export const CAMERAS: Record<ParadaId, Camera> = {
 
 /** Vista de cima pra "visão livre" (o lote inteiro) */
 export const VISTA_LIVRE = { pos: [-16, 44, 24] as V3, alvo: [0, 0, -15] as V3 }
-
-/** Áreas tocáveis na visão livre (tocar leva pra parada do tour) */
-export const AREAS: { id: ParadaId; x: [number, number]; z: [number, number]; y: number; andar: 'terreo' | 'superior' | 'fora' }[] = [
-  { id: 'sala', x: [-2.8, 4], z: [-2.4, 7], y: 0.02, andar: 'terreo' },
-  { id: 'cozinha', x: [4, 9], z: [-9, -1], y: 0.02, andar: 'terreo' },
-  { id: 'jogos', x: [-9, -4], z: [-9, 3.5], y: 0.02, andar: 'terreo' },
-  { id: 'mezanino', x: [-4, 4], z: [-5, -2.4], y: 3.42, andar: 'superior' },
-  { id: 'menino1', x: [-9, -5.2], z: [-9, -1], y: 3.42, andar: 'superior' },
-  { id: 'menino2', x: [-9, -5.2], z: [-1, 7], y: 3.42, andar: 'superior' },
-  { id: 'menina', x: [5.2, 9], z: [-9, -1], y: 3.42, andar: 'superior' },
-  { id: 'suite', x: [-5, 5], z: [-16, -9], y: 3.42, andar: 'superior' },
-  { id: 'calcada', x: [-1.8, 1.8], z: [10.6, 12.6], y: 0.1, andar: 'fora' },
-  { id: 'quintal', x: [-10.2, 10.4], z: [-27, -15.6], y: 0.1, andar: 'fora' },
-  { id: 'gourmet', x: [12.5, 20], z: [-25, -17], y: 0.1, andar: 'fora' },
-  { id: 'playground', x: [-22, -8.5], z: [-44, -33], y: 0.1, andar: 'fora' },
-]

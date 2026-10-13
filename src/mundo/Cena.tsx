@@ -8,6 +8,7 @@ import { Ceu, Nuvens } from './Ceu'
 import { DIRECAO_LUZ } from './cores'
 import { Borboletas, Flores } from './Flores'
 import { Grama } from './Grama'
+import { Horizonte } from './Horizonte'
 import { Interativo } from './Interativo'
 import { ArvoreFotos } from './objetos/ArvoreFotos'
 import { Casa } from './objetos/Casa'
@@ -19,6 +20,7 @@ import { Balizadores, Caminho, Canteiros } from './objetos/Jardim'
 import { RelogioSol } from './objetos/RelogioSol'
 import { Revoada } from './Revoada'
 import { Passaros } from './Passaros'
+import { ARVORES } from './obstaculos'
 import type { PontoId } from './pontos'
 import { altura, fatorCosta } from './terreno'
 import { Chao, Mar } from './Chao'
@@ -48,17 +50,7 @@ const CENTRO_SOMBRA: Vec3 = [12, 0, 2]
 const SOL = DIRECAO_LUZ.clone().multiplyScalar(70).add({ x: CENTRO_SOMBRA[0], y: 0, z: CENTRO_SOMBRA[2] })
 const noChao = (x: number, z: number): Vec3 => [x, altura(x, z), z]
 
-// árvores perto da casa: [x, z, altura, semente]
-const ARVORES: [number, number, number, number][] = [
-  [-15, -9, 9.5, 1],
-  [11, -11, 8, 2],
-  [-5, -16.5, 10.5, 3],
-  [13, 12.5, 7, 5],
-  [-19.5, 15.5, 7.5, 6], // (afastada: não fica na frente do varal das fotos)
-  [-21, 2, 8.5, 7],
-  [5.5, -20, 9, 8],
-  [-24, -12, 10, 9],
-]
+// (as árvores perto da casa ficam em obstaculos.ts, pra os pássaros saberem desviar delas)
 
 /** Tudo o que existe no nosso cantinho. */
 export function Cena({ onFocar, onPista, nossoDia, qualidade }: Props) {
@@ -187,6 +179,8 @@ export function Cena({ onFocar, onPista, nossoDia, qualidade }: Props) {
         {/* pássaros que vêm e vão; às vezes uma arara traz uma cartinha no pezinho */}
         <Revoada onPegou={onPista} />
       </Suspense>
+      {/* enfeite do mar: veleiros e golfinhos (pra tirar: apague esta linha e o arquivo Horizonte.tsx) */}
+      <Horizonte />
       <Borboletas quantidade={qualidade === 'baixa' ? 8 : 16} />
       <Vagalumes muitos={nossoDia} />
       {nossoDia && <Lanternas />}

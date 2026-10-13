@@ -1,41 +1,21 @@
-import { Preload, useCursor } from '@react-three/drei'
+import { Preload } from '@react-three/drei'
 import { Canvas } from '@react-three/fiber'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useCallback, useMemo, useState } from 'react'
 import { Carregando } from '../components/Carregando'
 import { CLASSE_CANVAS, Desempenho, dprInicial, ehCelular, GL_LEVE, LimiteFps, MedidorDebug, SombraCongelada, Vinheta } from '../lib/leve'
 import { CameraTour, PainelTour } from '../components/Tour'
-import { TOUR, type ParadaId } from '../data/tour'
+import { CartinhaHotel } from '../components/CartinhaHotel'
+import { irPara } from '../hooks/useRota'
+import { TOUR } from '../data/tour'
+import { CartinhaEstante } from './CartinhaEstante'
 import { CenaCasa, type Qualidade } from './CenaCasa'
-import { AREAS, CAMERAS, VISTA_LIVRE } from './paradas'
+import { CAMERAS, VISTA_LIVRE } from './paradas'
 
 type Andar = 'tudo' | 'terreo' | 'superior'
 
-/** Na visão livre, tocar num cômodo leva pra ele no tour */
-function AreasTocaveis({ andar, onIr }: { andar: Andar; onIr: (id: ParadaId) => void }) {
-  const [sobre, setSobre] = useState(false)
-  useCursor(sobre)
-  return (
-    <>
-      {AREAS.filter((a) => a.andar === 'fora' || (a.andar === 'terreo' ? andar === 'terreo' : andar !== 'terreo')).map((a) => (
-        <mesh
-          key={a.id}
-          position={[(a.x[0] + a.x[1]) / 2, a.y + 0.03, (a.z[0] + a.z[1]) / 2]}
-          rotation-x={-Math.PI / 2}
-          onClick={(e) => {
-            e.stopPropagation()
-            if (e.delta < 10) onIr(a.id)
-          }}
-          onPointerOver={() => setSobre(true)}
-          onPointerOut={() => setSobre(false)}
-        >
-          <planeGeometry args={[a.x[1] - a.x[0], a.z[1] - a.z[0]]} />
-          <meshBasicMaterial transparent opacity={0} depthWrite={false} />
-        </mesh>
-      ))}
-    </>
-  )
-}
+// (na visão livre, tocar num lugar não leva mais pra parada do tour: dá pra explorar à vontade
+// sem ser levado pra outro cômodo por um toque sem querer)
 
 export default function CasaTour({ onSair }: { onSair: () => void }) {
   const [i, setI] = useState(0)
@@ -45,6 +25,7 @@ export default function CasaTour({ onSair }: { onSair: () => void }) {
   const [pronto, setPronto] = useState(false)
   const [qualidade, setQualidade] = useState<Qualidade>(() => (ehCelular() ? 'media' : 'alta'))
   const [dpr, setDpr] = useState(dprInicial)
+  const [cartinha, setCartinha] = useState(false)
   const piscar = useCallback((v: boolean) => setPiscando(v), [])
 
   const parada = TOUR[i]
@@ -74,15 +55,8 @@ export default function CasaTour({ onSair }: { onSair: () => void }) {
         <Desempenho setDpr={setDpr} onPiorar={() => setQualidade('media')} />
         <CenaCasa ocultos={ocultos} qualidade={qualidade} foco={cam.alvo} amplo={livre} luzes={livre ? [] : (cam.luzes ?? [])} />
         <CameraTour cam={cam} livre={livre} vistaLivre={VISTA_LIVRE} distancia={[3, 90]} onPiscar={piscar} fovMax={84} recuoMax={1.3} />
-        {livre && (
-          <AreasTocaveis
-            andar={andar}
-            onIr={(id) => {
-              setI(TOUR.findIndex((t) => t.id === id))
-              setLivre(false)
-            }}
-          />
-        )}
+        {/* segredo 2 da lua de mel: a cartinha escondida na estante do mezanino */}
+        <CartinhaEstante oculto={ocultos.superior} onPegou={() => setCartinha(true)} />
       </Canvas>
       <Vinheta forca={0.3} />
 
@@ -119,10 +93,23 @@ export default function CasaTour({ onSair }: { onSair: () => void }) {
                 </button>
               ))}
             </div>
-            <p className="mt-3 text-[11px] tracking-[0.18em] text-grafite/50 uppercase">arraste pra girar · pince pra aproximar · toque num cômodo</p>
+            <p className="mt-3 text-[11px] tracking-[0.18em] text-grafite/50 uppercase">arraste pra girar · pince pra aproximar</p>
           </>
         }
       />
+
+      {/* a cartinha da estante: segura o selo até quebrar e aparece o hotel */}
+      <AnimatePresence>
+        {cartinha && (
+          <CartinhaHotel
+            onIr={() => {
+              setCartinha(false)
+              irPara('luademel')
+            }}
+            onFechar={() => setCartinha(false)}
+          />
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>{!pronto && <Carregando texto="abrindo a porta do nosso lar…" />}</AnimatePresence>
     </motion.div>

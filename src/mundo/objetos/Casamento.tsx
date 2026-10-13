@@ -19,6 +19,7 @@ import { CONFIG } from '../../config'
 import { criarArranjos, criarPampas, materialPampas, materialRosas, type Arranjo } from '../arranjos'
 import { Coqueiro, matFolhas } from '../Arvore'
 import { criarTufo } from '../Grama'
+import { COQUEIROS } from '../obstaculos'
 import { altura } from '../terreno'
 import { texJuta, texMadeira, texPlaca } from '../texturas'
 import { sorteador, type Vec3 } from '../util'
@@ -44,16 +45,7 @@ const POSTES_LUZ: [number, number][] = [
   [30.1, 18.8],
   [37.4, 18.8],
 ]
-const COQUEIROS: [number, number, number, number][] = [
-  [21.5, -14, 7.5, 0.3],
-  [20.6, -9.0, 6.8, -0.4],
-  [20.2, 10.4, 7.8, 0.6],
-  [22.2, 21, 7, -0.2],
-  [40.2, -6.8, 8.2, 2.9],
-  [40.6, 6.9, 7.2, 3.4],
-  [39.4, 21.2, 7.6, 2.6],
-  [40.8, -15, 6.9, 3.1],
-]
+// (os coqueiros ficam em ../obstaculos.ts, pra os pássaros saberem desviar deles)
 
 const chao = (x: number, z: number) => altura(x, z)
 const v3 = (x: number, dy: number, z: number) => new Vector3(x, chao(x, z) + dy, z)

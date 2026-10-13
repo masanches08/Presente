@@ -55,6 +55,9 @@ export function CameraTour({
   recuoMax = 1.5,
 }: CameraTourProps) {
   const ref = useRef<CameraControlsImpl>(null)
+  // (os números soltos, não os arrays: um array novo a cada render fazia a visão livre voltar sozinha pra vista de cima)
+  const [distMin, distMax] = distancia
+  const [ex, ey, ez] = entrada
   const { size, camera } = useThree()
   const aspecto = size.width / size.height
   // celular em pé: abre o ângulo (e recua um pouco, onde dá) pra mostrar a mesma largura de cena do notebook
@@ -91,10 +94,10 @@ export function CameraTour({
     c.touches.one = livre ? ACTION.TOUCH_ROTATE : ACTION.NONE
     c.touches.two = livre ? ACTION.TOUCH_DOLLY_TRUCK : ACTION.NONE
     c.touches.three = ACTION.NONE
-    c.minDistance = livre ? distancia[0] : 0
-    c.maxDistance = livre ? distancia[1] : Infinity
+    c.minDistance = livre ? distMin : 0
+    c.maxDistance = livre ? distMax : Infinity
     c.maxPolarAngle = livre ? 1.45 : Math.PI
-  }, [livre, distancia])
+  }, [livre, distMin, distMax])
 
   useEffect(() => {
     const c = ref.current
@@ -113,7 +116,7 @@ export function CameraTour({
     const [tx, ty, tz] = cam.alvo
     if (!ant) {
       // entrada de cinema
-      c.setLookAt(px + entrada[0], py + entrada[1], pz + entrada[2], tx, ty + 2, tz, false)
+      c.setLookAt(px + ex, py + ey, pz + ez, tx, ty + 2, tz, false)
       c.smoothTime = duracaoEntrada
       c.setLookAt(px, py, pz, tx, ty, tz, true)
       return
@@ -136,7 +139,7 @@ export function CameraTour({
       onPiscar?.(false)
     }, 420)
     return () => clearTimeout(id)
-  }, [cam, livre, onPiscar, vistaLivre, entrada, duracaoEntrada, recuo, recuoLivre])
+  }, [cam, livre, onPiscar, vistaLivre, ex, ey, ez, duracaoEntrada, recuo, recuoLivre])
 
   return <CameraControls ref={ref} makeDefault />
 }

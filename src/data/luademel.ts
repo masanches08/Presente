@@ -20,7 +20,12 @@ export const SEGREDOS: Segredo[] = [
     frase: 'Uma trilha de madrugada até o topo de um vulcão, pra ver o sol nascer em cima das nuvens. Com café da manhã lá em cima. Juntinhos.',
     onde: 'cartinha amarrada no pezinho de uma das araras que passam voando no mundo (src/mundo/Revoada.tsx)',
   },
-  { id: 'segredo2', nome: '???', frase: '', onde: 'ainda não decidido' },
+  {
+    id: 'hotel',
+    nome: 'Mandapa',
+    frase: 'Um vilarejo balinês de luxo na beira do rio Ayung, entre arrozais e a selva. O único hotel de Bali com 3 Chaves Michelin. Vila com piscina só nossa e jantar dentro de um casulo de bambu, ouvindo o rio.',
+    onde: 'cartinha escondida na estante do mezanino (2º andar da casa), 2ª prateleira de cima, entre o 2º e o 3º grupo de livros (src/casa/CartinhaEstante.tsx). Ela segura o selo de cera até ele quebrar (src/components/CartinhaHotel.tsx)',
+  },
   { id: 'segredo3', nome: '???', frase: '', onde: 'ainda não decidido' },
 ]
 
@@ -33,6 +38,21 @@ export const ARARA_CARTINHA = { primeira: [20, 45] as [number, number], interval
 
 /** Só pra testar: true = a arara da cartinha continua aparecendo mesmo depois de pega */
 export const ARARA_SEMPRE = false
+
+/** Só pra testar: true = a cartinha da estante continua lá mesmo depois de aberta */
+export const ESTANTE_SEMPRE = false
+
+/**
+ * O que aparece na carta do hotel (segredo 2), quando o selo quebra.
+ * (Mandapa, a Ritz-Carlton Reserve: 3 Chaves Michelin conferidas em out/2026 no Guia Michelin)
+ */
+export const CARTA_HOTEL = {
+  chamada: 'a gente vai ficar aqui',
+  nome: 'Mandapa',
+  lugar: 'a Ritz-Carlton Reserve · Ubud, Bali',
+  texto: 'Um vilarejo balinês na beira do rio Ayung, entre arrozais e a selva. Uma vila com piscina só nossa, um mordomo pra gente o dia inteiro e jantar à luz de velas dentro de um casulo de bambu, ouvindo o rio.',
+  destaques: ['3 Chaves Michelin · o único de Bali', 'vila com piscina particular na beira da selva', 'jantar num casulo de bambu na beira do rio'],
+}
 
 /** Quanto falta pra desbloquear */
 export const TEMPO_DESBLOQUEIO = '???'

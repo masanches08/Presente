@@ -9,7 +9,7 @@ export const TOUR = [
   { id: 'cozinha', nome: 'A cozinha', frase: 'Café da manhã juntos, todo dia.' },
   { id: 'piscina', nome: 'A porta pro quintal', frase: 'E lá fora, a piscina esperando os nossos domingos.' },
   { id: 'quintal', nome: 'O nosso quintal', frase: 'Domingo em família, do jeito que a gente sonha.' },
-  { id: 'gourmet', nome: 'Cozinha lá fora', frase: 'Casa cheia, do jeito que a gente gosta.' },
+  { id: 'gourmet', nome: 'Área gourmet', frase: 'Casa cheia, do jeito que a gente gosta.' },
   { id: 'playground', nome: 'Playground e casa na árvore', frase: 'Onde as crianças vão brincar.' },
   { id: 'jogos', nome: 'Sala de jogos', frase: 'Onde eu vou te deixar ganhar (às vezes).' },
   { id: 'mezanino', nome: 'Mezanino', frase: 'Daqui de cima, tudo o que a gente construiu.' },

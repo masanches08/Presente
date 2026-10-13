@@ -13,6 +13,7 @@ import {
 } from "three";
 import { ARARA_CARTINHA, ARARA_SEMPRE } from "../data/luademel";
 import { desbloquear, jaDesbloqueado } from "../lib/desbloqueios";
+import { bate } from "./obstaculos";
 import { altura } from "./terreno";
 
 // Revoada: de vez em quando um pássaro atravessa a tela, sempre na frente de onde a câmera está olhando
@@ -49,8 +50,36 @@ const DURACAO = {
 
 const sorteio = ([a, b]: [number, number]) => a + Math.random() * (b - a);
 
-/** Uma rota que cruza a tela de um lado pro outro, na frente da câmera, numa altura boa de ver */
+/**
+ * Uma rota que cruza a tela de um lado pro outro, na frente da câmera, numa altura boa de ver,
+ * sem atravessar a casa, as árvores nem nada (obstaculos.ts). Se a primeira ideia bate em algo,
+ * tenta passar mais perto da câmera (na frente das coisas) e, por último, mais alto.
+ */
 function novaRota(camera: Camera) {
+  const lado = Math.random() < 0.5 ? 1 : -1;
+  const dist = sorteio([22, 32]);
+  const subida = sorteio([0, 2.5]);
+  for (let tent = 0; tent < 14; tent++) {
+    const perto = Math.max(0.35, 1 - tent * 0.09); // vem pra frente das coisas
+    const acima = tent < 7 ? 0 : (tent - 6) * 1.6; // ou passa por cima
+    const rota = montarRota(camera, lado, Math.max(7, dist * perto), subida + acima);
+    if (livre(rota)) return rota;
+  }
+  // nada deu certo: passa bem lá no alto, acima de tudo
+  return montarRota(camera, lado, dist, 14);
+}
+
+/** Confere a rota inteira, ponto a ponto */
+function livre(rota: CatmullRomCurve3) {
+  const p = new Vector3();
+  for (let i = 0; i <= 160; i++) {
+    rota.getPointAt(i / 160, p);
+    if (bate(p.x, p.y, p.z)) return false;
+  }
+  return true;
+}
+
+function montarRota(camera: Camera, lado: number, dist: number, subida: number) {
   const olhar = new Vector3();
   camera.getWorldDirection(olhar);
   const frente = olhar.clone();
@@ -58,14 +87,12 @@ function novaRota(camera: Camera) {
   if (frente.lengthSq() < 1e-4) frente.set(0, 0, -1);
   frente.normalize();
   const direita = new Vector3(-frente.z, 0, frente.x);
-  const lado = Math.random() < 0.5 ? 1 : -1;
-  const dist = sorteio([22, 32]);
   const centro = camera.position.clone().addScaledVector(frente, dist);
   // na altura do meio da tela (onde a câmera está olhando), pra não passar por cima do contador lá em cima
   const alturaBase =
     camera.position.y +
     (olhar.y / Math.max(0.2, Math.hypot(olhar.x, olhar.z))) * dist +
-    sorteio([0, 2.5]);
+    subida;
   // um arco suave (sem curvas fechadas)
   const pontos = [
     [-64, 10, 4],
