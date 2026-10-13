@@ -6,6 +6,8 @@ import { Carregando } from '../components/Carregando'
 import { CLASSE_CANVAS, Desempenho, dprInicial, ehCelular, GL_LEVE, LimiteFps, MedidorDebug, SombraCongelada, Vinheta } from '../lib/leve'
 import { CameraTour, PainelTour, type CamTour } from '../components/Tour'
 import { PASSEIO_CASAMENTO, type ParadaCasamento } from '../data/casamento'
+import { area } from '../lib/cameraNoChao'
+import { alturaAreia, NIVEL_MAR } from './Ambiente'
 import { CenaCasamento, type Qualidade } from './CenaCasamento'
 
 // Onde a câmera fica e pra onde olha em cada parada (o mar e o sol ficam pro lado -z)
@@ -20,10 +22,16 @@ const CAMERAS: Record<ParadaCasamento, CamTour> = {
   pordosol: { pos: [-5, 5.5, 23], alvo: [7, 1.2, -22] },
 }
 const VISTA_LIVRE = { pos: [-20, 17, 30] as [number, number, number], alvo: [6, 0.5, -3] as [number, number, number] }
+const chaoDaPraia = (x: number, z: number) => Math.max(alturaAreia(x, z), NIVEL_MAR)
+/** Visão livre: da cerimônia à festa e ao lounge, sem sair pro mar nem pras dunas lá de trás */
+const AREA_LIVRE = area(-25, 35, -30, 28, 0.2, 20)
 
 export default function CasamentoTour({ onSair }: { onSair: () => void }) {
   const [i, setI] = useState(0)
   const [livre, setLivre] = useState(false)
+  // "recentralizar" da visão livre
+  const [fora, setFora] = useState(false)
+  const [recentrar, setRecentrar] = useState(0)
   const [pronto, setPronto] = useState(false)
   const [qualidade, setQualidade] = useState<Qualidade>(() => (ehCelular() ? 'media' : 'alta'))
   const [dpr, setDpr] = useState(dprInicial)
@@ -50,7 +58,7 @@ export default function CasamentoTour({ onSair }: { onSair: () => void }) {
         <Desempenho setDpr={setDpr} onPiorar={() => setQualidade('media')} />
         <CenaCasamento qualidade={qualidade} />
         {/* entrada de cinema: vem lá do mar até o altar */}
-        <CameraTour cam={cam} livre={livre} vistaLivre={VISTA_LIVRE} distancia={[4, 80]} entrada={[0, 9, -85]} duracaoEntrada={3.2} fovMax={80} recuoMax={1.4} />
+        <CameraTour cam={cam} livre={livre} recentrar={recentrar} onFora={setFora} vistaLivre={VISTA_LIVRE} distancia={[2, 70]} area={AREA_LIVRE} chao={chaoDaPraia} entrada={[0, 9, -85]} duracaoEntrada={3.2} fovMax={80} recuoMax={1.4} />
       </Canvas>
       <Vinheta forca={0.36} />
 
@@ -62,7 +70,8 @@ export default function CasamentoTour({ onSair }: { onSair: () => void }) {
         livre={livre}
         onLivre={() => setLivre((v) => !v)}
         onSair={onSair}
-        painelLivre={<p className="py-1 text-[11px] tracking-[0.18em] text-grafite/55 uppercase">arraste pra girar · pince pra aproximar</p>}
+        recentrar={{ visivel: fora, onClick: () => setRecentrar((n) => n + 1) }}
+        painelLivre={<p className="py-1 text-[11px] tracking-[0.18em] text-grafite/55 uppercase">um dedo gira · dois dedos andam e aproximam</p>}
       />
 
       <AnimatePresence>{!pronto && <Carregando texto="preparando o nosso casamento…" />}</AnimatePresence>

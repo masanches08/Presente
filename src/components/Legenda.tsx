@@ -1,4 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion'
+import type { ReactNode } from 'react'
 import { PONTOS, pontoPorId, type Ponto, type PontoId } from '../mundo/pontos'
 import { IconeFechar, SetaDireita, SetaEsquerda } from './Icons'
 
@@ -6,10 +7,12 @@ interface Props {
   foco: PontoId | null
   onFocar: (id: PontoId | null) => void
   onEntrar: (ponto: Ponto) => void
+  /** Algo que fica logo acima do cartão (o "recentralizar") */
+  acima?: ReactNode
 }
 
 /** Cartãozinho de vidro que aparece embaixo quando ela toca em algo do mundo. */
-export function Legenda({ foco, onFocar, onEntrar }: Props) {
+export function Legenda({ foco, onFocar, onEntrar, acima }: Props) {
   const ponto = foco ? pontoPorId(foco) : null
   const i = PONTOS.findIndex((p) => p.id === foco)
   const vizinho = (delta: number) => PONTOS[(i + delta + PONTOS.length) % PONTOS.length].id
@@ -22,10 +25,11 @@ export function Legenda({ foco, onFocar, onEntrar }: Props) {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 40 }}
           transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-          className="fixed inset-x-0 bottom-0 z-30 px-4"
+          className="pointer-events-none fixed inset-x-0 bottom-0 z-30 px-4"
           style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 1rem)' }}
         >
-          <div className="relative mx-auto max-w-md rounded-[30px] bg-papel/80 px-6 pt-6 pb-4 text-center shadow-suave ring-1 ring-dourado/25 backdrop-blur-xl">
+          {acima}
+          <div className="pointer-events-auto relative mx-auto max-w-md rounded-[30px] bg-papel/80 px-6 pt-6 pb-4 text-center shadow-suave ring-1 ring-dourado/25 backdrop-blur-xl">
             <button
               onClick={() => onFocar(null)}
               className="absolute top-3 right-3 grid size-10 place-items-center rounded-full text-grafite/45 active:bg-grafite/5"

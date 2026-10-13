@@ -15,10 +15,14 @@ export interface MundoProps {
   /** Para de desenhar (economiza bateria) quando uma página está aberta por cima */
   pausado: boolean
   onPronto: () => void
+  /** Muda a cada toque no "recentralizar" */
+  recentrar: number
+  /** A câmera saiu (ou voltou) da vista padrão */
+  onFora: (fora: boolean) => void
 }
 
 /** O nosso cantinho em 3D. Este arquivo só é baixado quando precisa (carregamento preguiçoso). */
-export default function Mundo({ foco, onFocar, onPista, nossoDia, pausado, onPronto }: MundoProps) {
+export default function Mundo({ foco, onFocar, onPista, nossoDia, pausado, onPronto, recentrar, onFora }: MundoProps) {
   // qualidade alta, que baixa sozinha se o aparelho começar a sofrer
   const [dpr, setDpr] = useState(dprInicial)
   const [qualidade, setQualidade] = useState<Qualidade>(() => (ehCelular() ? 'media' : 'alta'))
@@ -41,7 +45,7 @@ export default function Mundo({ foco, onFocar, onPista, nossoDia, pausado, onPro
         <LimiteFps ativo={!pausado} />
         <Desempenho setDpr={setDpr} onPiorar={() => setQualidade((q) => (q === 'alta' ? 'media' : 'baixa'))} />
         <Cena onFocar={onFocar} onPista={onPista} nossoDia={nossoDia} qualidade={qualidade} />
-        <Controles foco={foco} />
+        <Controles foco={foco} recentrar={recentrar} onFora={onFora} />
         <ProjetorMarcadores />
       </Canvas>
       <Vinheta />

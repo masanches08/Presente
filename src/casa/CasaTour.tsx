@@ -10,10 +10,14 @@ import { irPara } from '../hooks/useRota'
 import { TOUR } from '../data/tour'
 import { CartinhaEstante } from './CartinhaEstante'
 import { CenaCasa, type Qualidade } from './CenaCasa'
+import { area } from '../lib/cameraNoChao'
 import { CAMERAS, VISTA_LIVRE } from './paradas'
 import { TvSuite } from './TvSuite'
 
 type Andar = 'tudo' | 'terreo' | 'superior'
+
+/** Visão livre: o lote cercado (do fundo do quintal até a calçada da frente) */
+const AREA_LIVRE = area(-24, 24, -46, 16, 0.3, 20)
 
 // (na visão livre, tocar num lugar não leva mais pra parada do tour: dá pra explorar à vontade
 // sem ser levado pra outro cômodo por um toque sem querer)
@@ -21,6 +25,9 @@ type Andar = 'tudo' | 'terreo' | 'superior'
 export default function CasaTour({ onSair }: { onSair: () => void }) {
   const [i, setI] = useState(0)
   const [livre, setLivre] = useState(false)
+  // "recentralizar" da visão livre
+  const [fora, setFora] = useState(false)
+  const [recentrar, setRecentrar] = useState(0)
   const [andar, setAndar] = useState<Andar>('tudo')
   const [piscando, setPiscando] = useState(false)
   const [pronto, setPronto] = useState(false)
@@ -58,7 +65,7 @@ export default function CasaTour({ onSair }: { onSair: () => void }) {
         <LimiteFps />
         <Desempenho setDpr={setDpr} onPiorar={() => setQualidade('media')} />
         <CenaCasa ocultos={ocultos} qualidade={qualidade} foco={cam.alvo} amplo={livre} luzes={livre ? [] : (cam.luzes ?? [])} />
-        <CameraTour cam={cam} livre={livre} vistaLivre={VISTA_LIVRE} distancia={[3, 90]} onPiscar={piscar} fovMax={84} recuoMax={1.3} />
+        <CameraTour cam={cam} livre={livre} recentrar={recentrar} onFora={setFora} vistaLivre={VISTA_LIVRE} distancia={[2, 85]} area={AREA_LIVRE} onPiscar={piscar} fovMax={84} recuoMax={1.3} />
         {/* segredo 2 da lua de mel: a cartinha escondida na estante do mezanino */}
         <CartinhaEstante oculto={ocultos.superior} onPegou={() => setCartinha(true)} />
         <TvSuite ligada={naSuite} carregar={pertoDaSuite} oculto={ocultos.superior} />
@@ -79,6 +86,7 @@ export default function CasaTour({ onSair }: { onSair: () => void }) {
           setAndar('tudo')
         }}
         onSair={onSair}
+        recentrar={{ visivel: fora, onClick: () => setRecentrar((n) => n + 1) }}
         painelLivre={
           <>
             <div className="grid grid-cols-3 gap-1 rounded-full bg-grafite/5 p-1">
@@ -98,7 +106,7 @@ export default function CasaTour({ onSair }: { onSair: () => void }) {
                 </button>
               ))}
             </div>
-            <p className="mt-3 text-[11px] tracking-[0.18em] text-grafite/50 uppercase">arraste pra girar · pince pra aproximar</p>
+            <p className="mt-3 text-[11px] tracking-[0.18em] text-grafite/50 uppercase">um dedo gira · dois dedos andam e aproximam</p>
           </>
         }
       />

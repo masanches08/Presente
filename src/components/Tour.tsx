@@ -3,8 +3,10 @@ import { useFrame, useThree } from '@react-three/fiber'
 import CameraControlsImpl from 'camera-controls'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useRef, type ReactNode } from 'react'
-import type { PerspectiveCamera } from 'three'
+import { Vector3, type Box3, type PerspectiveCamera } from 'three'
+import { saiuDaVista, useCameraNoChao } from '../lib/cameraNoChao'
 import { enquadrar, recuar, subidaPainel } from '../lib/enquadramento'
+import { BotaoRecentrar } from './BotaoRecentrar'
 import { SetaDireita, SetaEsquerda } from './Icons'
 
 const { ACTION } = CameraControlsImpl
@@ -38,6 +40,21 @@ interface CameraTourProps {
   fovMax?: number
   /** Recuo máximo padrão (quando a parada não diz o dela) */
   recuoMax?: number
+  /** Por onde a visão livre pode andar (o chão da caixa é o chão da câmera) */
+  area?: Box3
+  /** Altura do chão, pra terreno com morrinho (a visão livre não deixa a câmera entrar nele) */
+  chao?: (x: number, z: number) => number
+  /** Muda a cada toque no "recentralizar" (volta pra vista padrão da visão livre) */
+  recentrar?: number
+  /** A câmera saiu (ou voltou) da vista padrão da visão livre */
+  onFora?: (fora: boolean) => void
+}
+
+const chaoPlano = () => 0
+
+function irPraVistaLivre(c: CameraControlsImpl, vista: { pos: V3; alvo: V3 }, recuo: number) {
+  c.smoothTime = 1.0
+  c.setLookAt(...recuar(vista.pos, vista.alvo, recuo), ...vista.alvo, true)
 }
 
 /**
@@ -55,6 +72,10 @@ export function CameraTour({
   fovBase = 50,
   fovMax = 78,
   recuoMax = 1.5,
+  area,
+  chao = chaoPlano,
+  recentrar = 0,
+  onFora,
 }: CameraTourProps) {
   const ref = useRef<CameraControlsImpl>(null)
   // (os números soltos, não os arrays: um array novo a cada render fazia a visão livre voltar sozinha pra vista de cima)
@@ -69,6 +90,8 @@ export function CameraTour({
   const anterior = useRef<CamTour | null>(null)
   const saiuDoLivre = useRef(false)
   const cortePendente = useRef(false) // um "piscar" foi interrompido no meio (cliques rápidos)
+  const fora = useRef(false)
+  const ultimoRecentrar = useRef(recentrar)
 
   useEffect(() => {
     const c = camera as PerspectiveCamera
@@ -98,18 +121,47 @@ export function CameraTour({
     c.touches.three = ACTION.NONE
     c.minDistance = livre ? distMin : 0
     c.maxDistance = livre ? distMax : Infinity
-    c.maxPolarAngle = livre ? 1.45 : Math.PI
-  }, [livre, distMin, distMax])
+    c.maxPolarAngle = livre ? 1.5 : Math.PI
+    // como no Maps do iPad: 2 dedos arrastam pelo chão e a pinça aproxima de onde os dedos estão;
+    // o ponto que a câmera olha fica dentro da área da cena (e o chão dela segura a câmera)
+    c.verticalDragToForward = livre
+    c.dollyToCursor = livre
+    c.setBoundary(livre ? area : undefined)
+  }, [livre, distMin, distMax, area])
+
+  useCameraNoChao(ref, chao, livre)
+
+  // "recentralizar": volta deslizando pra vista padrão da visão livre
+  useEffect(() => {
+    const c = ref.current
+    if (!c || recentrar === ultimoRecentrar.current) return
+    ultimoRecentrar.current = recentrar
+    if (!livre) return
+    irPraVistaLivre(c, vistaLivre, recuoLivre)
+    fora.current = false
+    onFora?.(false)
+  }, [recentrar, livre, vistaLivre, recuoLivre, onFora])
+
+  // ela mexeu na câmera: se saiu da vista padrão, aparece o "recentralizar"
+  const mexeu = () => {
+    const c = ref.current
+    if (!c || !livre || fora.current) return
+    const pos = new Vector3(...recuar(vistaLivre.pos, vistaLivre.alvo, recuoLivre))
+    if (!saiuDaVista(c, pos, new Vector3(...vistaLivre.alvo))) return
+    fora.current = true
+    onFora?.(true)
+  }
 
   useEffect(() => {
     const c = ref.current
     if (!c) return
+    fora.current = false
+    onFora?.(false)
     if (livre) {
       saiuDoLivre.current = true
       cortePendente.current = false
       onPiscar?.(false)
-      c.smoothTime = 1.0
-      c.setLookAt(...recuar(vistaLivre.pos, vistaLivre.alvo, recuoLivre), ...vistaLivre.alvo, true)
+      irPraVistaLivre(c, vistaLivre, recuoLivre)
       return
     }
     const ant = anterior.current
@@ -159,9 +211,9 @@ export function CameraTour({
     )
     virarDepois(420 + 900)
     return limpar
-  }, [cam, livre, onPiscar, vistaLivre, ex, ey, ez, duracaoEntrada, recuo, recuoLivre])
+  }, [cam, livre, onPiscar, onFora, vistaLivre, ex, ey, ez, duracaoEntrada, recuo, recuoLivre])
 
-  return <CameraControls ref={ref} makeDefault />
+  return <CameraControls ref={ref} makeDefault onControl={mexeu} />
 }
 
 interface Parada {
@@ -180,12 +232,14 @@ interface PainelProps {
   onSair: () => void
   /** Conteúdo do painel da visão livre */
   painelLivre: ReactNode
+  /** "Recentralizar" da visão livre: aparece em cima do cartão quando ela tira a câmera do lugar */
+  recentrar?: { visivel: boolean; onClick: () => void }
   /** Botões extras no topo (ex.: som) */
   extras?: ReactNode
 }
 
 /** Botões e legendas por cima da cena 3D dos passeios */
-export function PainelTour({ paradas, i, onIr, sobretitulo, livre, onLivre, onSair, painelLivre, extras }: PainelProps) {
+export function PainelTour({ paradas, i, onIr, sobretitulo, livre, onLivre, onSair, painelLivre, extras, recentrar }: PainelProps) {
   const parada = paradas[i]
   const ir = (d: number) => onIr((i + d + paradas.length) % paradas.length)
 
@@ -217,7 +271,8 @@ export function PainelTour({ paradas, i, onIr, sobretitulo, livre, onLivre, onSa
         </div>
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 z-10 px-4" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 1rem)' }}>
+      <div className="pointer-events-none fixed inset-x-0 bottom-0 z-10 px-4" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 1rem)' }}>
+        {recentrar && <BotaoRecentrar visivel={livre && recentrar.visivel} onClick={recentrar.onClick} />}
         <AnimatePresence mode="wait">
           {livre ? (
             <motion.div
@@ -225,7 +280,7 @@ export function PainelTour({ paradas, i, onIr, sobretitulo, livre, onLivre, onSa
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 20 }}
-              className="mx-auto max-w-md rounded-[26px] bg-papel/85 p-4 text-center shadow-suave ring-1 ring-dourado/25 backdrop-blur-xl"
+              className="pointer-events-auto mx-auto max-w-md rounded-[26px] bg-papel/85 p-4 text-center shadow-suave ring-1 ring-dourado/25 backdrop-blur-xl"
             >
               {painelLivre}
             </motion.div>
@@ -235,7 +290,7 @@ export function PainelTour({ paradas, i, onIr, sobretitulo, livre, onLivre, onSa
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 20 }}
-              className="relative mx-auto max-w-md rounded-[30px] bg-papel/82 px-5 pt-5 pb-4 text-center shadow-suave ring-1 ring-dourado/25 backdrop-blur-xl"
+              className="pointer-events-auto relative mx-auto max-w-md rounded-[30px] bg-papel/82 px-5 pt-5 pb-4 text-center shadow-suave ring-1 ring-dourado/25 backdrop-blur-xl"
             >
               <AnimatePresence mode="wait" initial={false}>
                 <motion.div key={parada.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.35 }}>

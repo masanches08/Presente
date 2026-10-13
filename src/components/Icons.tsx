@@ -100,3 +100,12 @@ export const IconeAviao = (p: P) => (
     <path d="M10.5 13.5 4 11l1.2-1.2 7.3.8 4.3-4.3a1.8 1.8 0 0 1 2.6 2.6l-4.3 4.3.8 7.3L14.7 21l-2.5-6.5-3 3 .3 2.3-1 1-1.3-2.9-2.9-1.3 1-1 2.3.3z" />
   </Svg>
 )
+
+/** Mira de "recentralizar" (como no GPS) */
+export const IconeRecentrar = (p: P) => (
+  <Svg {...p}>
+    <circle cx="12" cy="12" r="6.5" />
+    <circle cx="12" cy="12" r="1.6" fill="currentColor" />
+    <path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3" />
+  </Svg>
+)

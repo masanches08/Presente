@@ -3,11 +3,14 @@ import { useFrame, useThree } from '@react-three/fiber'
 import CameraControlsImpl from 'camera-controls'
 import { useEffect, useRef } from 'react'
 import { PerspectiveCamera, Vector3 } from 'three'
+import { area, saiuDaVista, useCameraNoChao } from '../lib/cameraNoChao'
 import { enquadrar } from '../lib/enquadramento'
 import { noChao, pontoPorId, type PontoId } from './pontos'
+import { altura, NIVEL_MAR } from './terreno'
 import type { Vec3 } from './util'
 
 const { ACTION } = CameraControlsImpl
+const chaoDoMundo = (x: number, z: number) => Math.max(altura(x, z), NIVEL_MAR)
 
 /** Vista geral da ilha */
 const PADRAO: { alvo: Vec3; direcao: Vec3; distancia: number } = {
@@ -20,8 +23,11 @@ const PADRAO: { alvo: Vec3; direcao: Vec3; distancia: number } = {
  * Câmera: entrada lenta de cinema, voo suave até o objeto tocado,
  * e ela pode girar (1 dedo) e aproximar (pinça) à vontade.
  */
-export function Controles({ foco }: { foco: PontoId | null }) {
+export function Controles({ foco, recentrar, onFora }: { foco: PontoId | null; recentrar: number; onFora: (fora: boolean) => void }) {
   const ref = useRef<CameraControlsImpl>(null)
+  // a vista padrão do momento (a geral, ou a do lugar em foco): é pra ela que o "recentralizar" volta
+  const padrao = useRef({ pos: new Vector3(), alvo: new Vector3() })
+  const fora = useRef(false)
   const { size, camera } = useThree()
   const aspecto = size.width / size.height
   // celular em pé: abre o ângulo e afasta um pouco, pra mostrar a mesma largura do notebook
@@ -40,12 +46,20 @@ export function Controles({ foco }: { foco: PontoId | null }) {
   useEffect(() => {
     const c = ref.current
     if (!c) return
-    c.mouseButtons.right = ACTION.NONE
-    c.mouseButtons.middle = ACTION.NONE
-    c.touches.two = ACTION.TOUCH_DOLLY
+    // como no Maps do iPad: 1 dedo gira; 2 dedos arrastam pelo chão e a pinça aproxima de onde os dedos estão.
+    // O zoom para no limite (sem "infinityDolly": perto do alvo ele andava quase nada e parecia travado)
+    c.mouseButtons.right = ACTION.TRUCK
+    c.mouseButtons.middle = ACTION.TRUCK
+    c.touches.two = ACTION.TOUCH_DOLLY_TRUCK
     c.touches.three = ACTION.NONE
+    c.verticalDragToForward = true
+    c.dollyToCursor = true
+    // o miolo da ilha: da casa até a praia do futevôlei, sem fugir pros morros nem pro mar aberto
+    c.setBoundary(area(-28, 50, -32, 28, 0, 25))
     c.draggingSmoothTime = 0.12
   }, [])
+
+  useCameraNoChao(ref, chaoDoMundo)
 
   // voa pro objeto em foco (ou volta pra vista geral)
   useEffect(() => {
@@ -68,7 +82,32 @@ export function Controles({ foco }: { foco: PontoId | null }) {
     // essas voltas todas no voo, dando um 360. Assim ela vai sempre pelo lado mais curto.
     c.normalizeRotations()
     ultimoToque.current = performance.now() + (emIntro ? 3000 : 0)
-  }, [foco, fator])
+    padrao.current = { pos, alvo }
+    fora.current = false
+    onFora(false)
+  }, [foco, fator, onFora])
+
+  // "recentralizar": volta deslizando pra vista padrão
+  useEffect(() => {
+    const c = ref.current
+    if (!c || !recentrar) return
+    const { pos, alvo } = padrao.current
+    c.smoothTime = 0.85
+    c.setLookAt(pos.x, pos.y, pos.z, alvo.x, alvo.y, alvo.z, true)
+    c.normalizeRotations()
+    ultimoToque.current = performance.now()
+    fora.current = false
+    onFora(false)
+  }, [recentrar, onFora])
+
+  // ela mexeu na câmera: se saiu da vista padrão, aparece o "recentralizar"
+  const mexeu = () => {
+    ultimoToque.current = performance.now()
+    const c = ref.current
+    if (!c || fora.current || !saiuDaVista(c, padrao.current.pos, padrao.current.alvo)) return
+    fora.current = true
+    onFora(true)
+  }
 
   // quando ninguém mexe por um tempinho, o mundo gira devagar sozinho
   useFrame((_, dt) => {
@@ -93,12 +132,12 @@ export function Controles({ foco }: { foco: PontoId | null }) {
     <CameraControls
       ref={ref}
       makeDefault
-      minDistance={2.5}
+      minDistance={2}
       maxDistance={70}
-      minPolarAngle={0.2}
-      maxPolarAngle={1.42}
+      minPolarAngle={0.05}
+      maxPolarAngle={1.5}
       onControlStart={() => (ultimoToque.current = performance.now())}
-      onControl={() => (ultimoToque.current = performance.now())}
+      onControl={mexeu}
     />
   )
 }
