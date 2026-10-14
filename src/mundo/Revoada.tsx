@@ -8,6 +8,7 @@ import {
   Vector3,
   type Camera,
   type Group,
+  type MeshStandardMaterial,
   type Sprite,
   type SpriteMaterial,
 } from "three";
@@ -27,7 +28,7 @@ const MODELOS: Record<Tipo, { url: string; escala: number }> = {
   flamingo: { url: "/models/Flamingo.glb", escala: 0.021 },
 };
 
-// cada "vaga" é um pássaro que fica indo e voltando (poucos: no máximo um de cada por vez)
+// cada "vaga" é um pássaro que fica indo e voltando (várias araras, um flamingo e a arara da cartinha)
 const VAGAS: {
   tipo: Tipo;
   primeira: [number, number];
@@ -35,6 +36,8 @@ const VAGAS: {
   cartinha?: boolean;
 }[] = [
   { tipo: "arara", primeira: [5, 12], espera: [20, 40] },
+  { tipo: "arara", primeira: [14, 24], espera: [26, 46] },
+  { tipo: "arara", primeira: [32, 48], espera: [30, 55] },
   { tipo: "flamingo", primeira: [25, 40], espera: [45, 80] },
   {
     tipo: "arara",
@@ -55,9 +58,9 @@ const sorteio = ([a, b]: [number, number]) => a + Math.random() * (b - a);
  * sem atravessar a casa, as árvores nem nada (obstaculos.ts). Se a primeira ideia bate em algo,
  * tenta passar mais perto da câmera (na frente das coisas) e, por último, mais alto.
  */
-function novaRota(camera: Camera) {
+function novaRota(camera: Camera, perto = false) {
   const lado = Math.random() < 0.5 ? 1 : -1;
-  const dist = sorteio([22, 32]);
+  const dist = sorteio(perto ? [13, 18] : [22, 32]);
   const subida = sorteio([0, 2.5]);
   for (let tent = 0; tent < 14; tent++) {
     const perto = Math.max(0.35, 1 - tent * 0.09); // vem pra frente das coisas
@@ -111,7 +114,28 @@ function montarRota(camera: Camera, lado: number, dist: number, subida: number) 
   return new CatmullRomCurve3(pontos, false, "catmullrom", 0.5);
 }
 
-/** O reflexinho de luz no papel */
+/** Estrelinha de 4 pontas (o brilho que pisca em volta da cartinha) */
+function texEstrela() {
+  const c = document.createElement("canvas");
+  c.width = c.height = 64;
+  const ctx = c.getContext("2d")!;
+  const g = ctx.createRadialGradient(32, 32, 0, 32, 32, 10);
+  g.addColorStop(0, "rgba(255,255,255,1)");
+  g.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, 64, 64);
+  ctx.fillStyle = "rgba(255,255,255,0.9)";
+  ctx.beginPath();
+  ctx.moveTo(32, 2);
+  ctx.quadraticCurveTo(34, 30, 62, 32);
+  ctx.quadraticCurveTo(34, 34, 32, 62);
+  ctx.quadraticCurveTo(30, 34, 2, 32);
+  ctx.quadraticCurveTo(30, 30, 32, 2);
+  ctx.fill();
+  return new CanvasTexture(c);
+}
+
+/** O brilho redondinho (auréola atrás da cartinha) */
 function texBrilho() {
   const c = document.createElement("canvas");
   c.width = c.height = 64;
@@ -126,27 +150,46 @@ function texBrilho() {
 }
 
 /**
- * A cartinha: envelope de papel comum com selo de cera, pendurada num barbante.
- * Nada de brilho chamativo: só um reflexinho rápido de vez em quando.
+ * A cartinha: envelope com selo de cera, pendurada num barbante.
+ * Brilha pra chamar atenção (senão some no céu): auréola dourada pulsando, contorno dourado
+ * no envelope, o papel acendendo de leve e estrelinhas piscando em volta.
  */
+const ESTRELINHAS = [
+  [0.42, 0.22, 0.0],
+  [-0.4, 0.16, 1.3],
+  [0.3, -0.26, 2.4],
+  [-0.34, -0.22, 3.3],
+  [0.02, 0.36, 4.2],
+  [0.5, -0.04, 5.1],
+] as const;
+
 function Cartinha() {
   const balanco = useRef<Group>(null);
-  const reflexo = useRef<Sprite>(null);
+  const aureola = useRef<Sprite>(null);
+  const papel = useRef<MeshStandardMaterial>(null);
+  const estrelas = useRef<(Sprite | null)[]>([]);
   const brilho = useMemo(() => texBrilho(), []);
+  const estrela = useMemo(() => texEstrela(), []);
   useFrame(({ clock }) => {
     const g = balanco.current;
     if (!g) return;
     const t = clock.elapsedTime;
     g.rotation.z = Math.sin(t * 2.6) * 0.25;
     g.rotation.x = Math.sin(t * 1.9) * 0.12;
-    // reflexo: aparece por ~0,3 s a cada 5 s
-    const r = reflexo.current;
-    if (r) {
-      const f = (t % 5) / 0.3;
-      const v = f < 1 ? Math.sin(f * Math.PI) : 0;
-      r.scale.setScalar(0.25 + v * 0.35);
-      (r.material as SpriteMaterial).opacity = v * 0.8;
+    const pulso = 0.5 + 0.5 * Math.sin(t * 3.2);
+    const a = aureola.current;
+    if (a) {
+      a.scale.setScalar(1.7 + pulso * 0.7);
+      (a.material as SpriteMaterial).opacity = 0.75 + pulso * 0.25;
     }
+    if (papel.current) papel.current.emissiveIntensity = 0.35 + pulso * 0.45;
+    estrelas.current.forEach((e, i) => {
+      if (!e) return;
+      const fase = ESTRELINHAS[i][2];
+      const v = Math.max(0, Math.sin(t * 2.4 + fase * 1.7));
+      e.scale.setScalar(0.05 + v * 0.16);
+      (e.material as SpriteMaterial).opacity = v;
+    });
   });
   return (
     <group ref={balanco} position={[0, -0.08, -0.05]}>
@@ -156,9 +199,18 @@ function Cartinha() {
         <meshBasicMaterial color="#C9A06F" />
       </mesh>
       <group position={[0, -0.56, 0]}>
+        {/* auréola dourada atrás (sempre virada pra câmera) */}
+        <sprite ref={aureola} scale={1.4} renderOrder={-1}>
+          <spriteMaterial map={brilho} color="#FFB347" transparent depthWrite={false} blending={AdditiveBlending} toneMapped={false} opacity={0.7} />
+        </sprite>
+        {/* contorno dourado em volta do envelope */}
+        <mesh>
+          <boxGeometry args={[0.53, 0.39, 0.012]} />
+          <meshBasicMaterial color="#FFD37A" toneMapped={false} />
+        </mesh>
         <mesh>
           <boxGeometry args={[0.46, 0.32, 0.025]} />
-          <meshStandardMaterial color="#EFE6D4" roughness={0.9} />
+          <meshStandardMaterial ref={papel} color="#F6EEDC" emissive="#FFE2A6" emissiveIntensity={0.5} roughness={0.9} />
         </mesh>
         {/* a aba do envelope (dos dois lados) */}
         {[1, -1].map((l) => (
@@ -168,7 +220,7 @@ function Cartinha() {
             rotation={[0, l === 1 ? 0 : Math.PI, Math.PI]}
           >
             <circleGeometry args={[0.24, 3, Math.PI / 2]} />
-            <meshStandardMaterial color="#E4D8C2" roughness={0.9} />
+            <meshStandardMaterial color="#E9DCC3" emissive="#FFE2A6" emissiveIntensity={0.25} roughness={0.9} />
           </mesh>
         ))}
         {/* selo de cera */}
@@ -179,18 +231,15 @@ function Cartinha() {
             rotation-y={l === 1 ? 0 : Math.PI}
           >
             <circleGeometry args={[0.055, 16]} />
-            <meshStandardMaterial color="#9C2B25" roughness={0.5} />
+            <meshStandardMaterial color="#B3322A" emissive="#7A1A14" emissiveIntensity={0.4} roughness={0.5} />
           </mesh>
         ))}
-        <sprite ref={reflexo} position={[0.14, 0.08, 0.03]} scale={0.25}>
-          <spriteMaterial
-            map={brilho}
-            transparent
-            depthWrite={false}
-            blending={AdditiveBlending}
-            opacity={0}
-          />
-        </sprite>
+        {/* estrelinhas piscando em volta */}
+        {ESTRELINHAS.map(([x, y], i) => (
+          <sprite key={i} ref={(e) => void (estrelas.current[i] = e)} position={[x, y, 0.05]} scale={0.1}>
+            <spriteMaterial map={estrela} color="#FFF1C9" transparent depthWrite={false} blending={AdditiveBlending} toneMapped={false} opacity={0} />
+          </sprite>
+        ))}
       </group>
     </group>
   );
@@ -251,10 +300,10 @@ function Passaro({
         v.proxima = Infinity;
         return;
       }
-      v.rota = novaRota(camera);
+      v.cartinha = !!vaga.cartinha;
+      v.rota = novaRota(camera, v.cartinha);
       v.inicio = t;
       v.fuga = -1;
-      v.cartinha = !!vaga.cartinha;
       v.duracao = sorteio(v.cartinha ? DURACAO.cartinha : DURACAO.normal);
       setComCartinha(v.cartinha);
     }
@@ -324,7 +373,7 @@ function Passaro({
       </group>
       {/* (fica sempre montada e só aparece quando é a vez dela: assim não trava ao aparecer) */}
       <group visible={comCartinha}>
-        <group scale={1.6}>
+        <group scale={2.1}>
           <Cartinha />
         </group>
         {/* área de toque bem maior que a arara (ela está voando) */}

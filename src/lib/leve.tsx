@@ -59,10 +59,16 @@ export function SombraCongelada({ chave }: { chave?: unknown }) {
 /** Com ?debug no endereço, mostra no console quantos desenhos/triângulos a cena faz (pra medir o peso) */
 export function MedidorDebug() {
   const gl = useThree((s) => s.gl)
+  const scene = useThree((s) => s.scene)
+  const camera = useThree((s) => s.camera)
   useEffect(() => {
     if (!new URLSearchParams(window.location.search).has('debug')) return
-    ;(window as unknown as { __gl?: unknown[] }).__gl = [...((window as unknown as { __gl?: unknown[] }).__gl ?? []), gl]
-  }, [gl])
+    const w = window as unknown as { __gl?: unknown[]; __cena?: unknown; __camera?: unknown }
+    w.__gl = [...(w.__gl ?? []), gl]
+    // (pra testes automáticos: dá pra esconder peças e ver de onde a câmera está olhando)
+    w.__cena = scene
+    w.__camera = camera
+  }, [gl, scene, camera])
   return null
 }
 

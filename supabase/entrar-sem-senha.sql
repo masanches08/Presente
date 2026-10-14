@@ -1,3 +1,5 @@
+-- ⚠️ SUBSTITUÍDO por duas-contas.sql (uma conta pra cada um). Não rode mais este arquivo:
+--    ele recriaria a função antiga da conta única. Fica aqui só de histórico.
 -- ============================================================
 -- Nosso Lar: entrar sem e-mail e senha
 -- O site pergunta "Nome do amor da minha vida:" e esta função confere a resposta.

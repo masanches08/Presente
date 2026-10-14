@@ -34,7 +34,7 @@ export const SEGREDOS: Segredo[] = [
  * a primeira vez entre `primeira`, e depois volta a cada `intervalo`, até ela pegar.
  * Depois de pega, nunca mais aparece.
  */
-export const ARARA_CARTINHA = { primeira: [20, 45] as [number, number], intervalo: [75, 120] as [number, number] }
+export const ARARA_CARTINHA = { primeira: [15, 30] as [number, number], intervalo: [45, 75] as [number, number] }
 
 /** Só pra testar: true = a arara da cartinha continua aparecendo mesmo depois de pega */
 export const ARARA_SEMPRE = false
@@ -56,3 +56,15 @@ export const CARTA_HOTEL = {
 
 /** Quanto falta pra desbloquear */
 export const TEMPO_DESBLOQUEIO = '???'
+
+/**
+ * O que aparece na carta da arara (segredo 1), quando o laço desamarra.
+ * (o texto é o mesmo do segredo: troque lá em cima, em SEGREDOS)
+ */
+export const CARTA_ARARA = {
+  chamada: 'a gente vai ver isso, juntinhos',
+  nome: SEGREDOS[0].nome,
+  lugar: 'Kintamani · Bali',
+  texto: SEGREDOS[0].frase,
+  destaques: ['trilha de madrugada até o topo do vulcão', 'o sol nascendo em cima das nuvens', 'café da manhã lá em cima, só nós dois'],
+}

@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion'
 import { useState, type FormEvent } from 'react'
-import { CONFIG } from '../config'
+import { guardarEntrada } from '../hooks/useSessao'
 import { supabase } from '../lib/supabase'
 import { CoracaoCheio } from './Icons'
 import { Ornamento } from './Ornamento'
@@ -8,9 +8,9 @@ import { Ornamento } from './Ornamento'
 /**
  * A primeira coisa que ela vê: um cartão de vidro por cima do nosso cantinho em 3D.
  * Nada de e-mail e senha: só "Nome do amor da minha vida:".
- * Quem confere a resposta é o Supabase (função chave_do_lar, em supabase/entrar-sem-senha.sql):
- * se estiver certa, ele devolve a senha técnica da conta única do casal e o site entra sozinho.
- * Ela responde uma vez em cada aparelho; depois o site lembra.
+ * Quem confere a resposta é o Supabase (função entrar_no_lar, em supabase/duas-contas.sql):
+ * o nome dela (ou "amor"…) entra na conta dela; a senha dele, na conta dele.
+ * Cada um responde uma vez em cada aparelho; depois o site lembra (e entra sozinho se a sessão cair).
  */
 export function Login() {
   const [resposta, setResposta] = useState('')
@@ -22,21 +22,24 @@ export function Login() {
     if (!supabase || !resposta.trim()) return
     setEnviando(true)
     setErro(null)
-    const { data: chave, error: erroChave } = await supabase.rpc('chave_do_lar', { resposta })
-    if (erroChave) {
+    const { data: conta, error: erroConta } = await supabase.rpc('entrar_no_lar', { resposta })
+    if (erroConta) {
       setEnviando(false)
       // (PGRST202 = a função ainda não foi criada no Supabase)
-      setErro(erroChave.code === 'PGRST202' ? 'Falta terminar de preparar o Supabase (entrar-sem-senha.sql).' : 'Não consegui conectar agora. Confere a internet?')
+      setErro(erroConta.code === 'PGRST202' ? 'Falta terminar de preparar o Supabase (duas-contas.sql).' : 'Não consegui conectar agora. Confere a internet?')
       return
     }
-    if (!chave) {
+    if (!conta) {
       setEnviando(false)
       setErro('Hmm… não é bem isso. Tenta de novo?')
       return
     }
-    const { error } = await supabase.auth.signInWithPassword({ email: CONFIG.contaDoLar, password: chave as string })
+    const { email, senha } = conta as { email: string; senha: string }
+    const { error } = await supabase.auth.signInWithPassword({ email, password: senha })
     setEnviando(false)
     if (error) setErro('Não consegui entrar agora. Tenta de novo daqui a pouquinho?')
+    // o aparelho guarda a entrada: não pergunta mais (nem se a sessão cair), só depois de "sair"
+    else guardarEntrada({ email, senha })
   }
 
   return (

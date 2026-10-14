@@ -120,3 +120,15 @@ export async function gerarVersoes(fonte: Fonte, r: Recorte) {
 
   return { grande: await paraBlob(grande, 0.92), mini: await paraBlob(mini, 0.85) }
 }
+
+/** Foto pra colar como adesivo na cartinha: sem recorte, só diminui (o lado maior fica com `max` px) */
+export async function fotoAdesivo(fonte: Fonte, max = 900) {
+  const k = Math.min(1, max / Math.max(fonte.largura, fonte.altura))
+  const c = document.createElement('canvas')
+  c.width = Math.round(fonte.largura * k)
+  c.height = Math.round(fonte.altura * k)
+  const g = c.getContext('2d')!
+  g.imageSmoothingQuality = 'high'
+  g.drawImage(fonte.imagem, 0, 0, c.width, c.height)
+  return { blob: await paraBlob(c, 0.86), largura: c.width, altura: c.height }
+}

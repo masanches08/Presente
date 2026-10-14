@@ -8,10 +8,13 @@ export const CONFIG = {
   aniversarioDela: { dia: 29, mes: 10 },
 
   /**
-   * A conta única do casal no Supabase (ninguém digita isso: o site entra sozinho
-   * quando a resposta de "Nome do amor da minha vida:" está certa).
+   * Uma conta pra cada um no Supabase (ninguém digita isso: a resposta de "Nome do amor da minha vida:"
+   * decide em qual conta o site entra — veja supabase/duas-contas.sql).
    */
-  contaDoLar: 'nos@nossolar.app',
+  contas: { ele: 'ele@nossolar.app', ela: 'nos@nossolar.app' },
+
+  /** Os nomes de vocês (aparecem nas cartinhas: "de Matheus", "pra Camila"). */
+  pessoas: { ele: 'Matheus', ela: 'Camila' },
 
   /** Fuso usado pra saber "que dia é hoje". */
   fuso: 'America/Sao_Paulo',

@@ -9,3 +9,8 @@ const chave = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined
  * e o site funciona no "modo local" (datas salvas só neste aparelho).
  */
 export const supabase = url && chave ? createClient(url, chave, { auth: { persistSession: true, autoRefreshToken: true } }) : null
+
+// (só pra testes automáticos, com ?debug no endereço: dá pra simular a sessão caindo)
+if (supabase && typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('debug')) {
+  ;(window as unknown as { __supabase?: unknown }).__supabase = supabase
+}

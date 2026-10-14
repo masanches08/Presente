@@ -236,10 +236,12 @@ interface PainelProps {
   recentrar?: { visivel: boolean; onClick: () => void }
   /** Botões extras no topo (ex.: som) */
   extras?: ReactNode
+  /** Um botão da própria parada, embaixo da frase (ex.: acelerar o touro, grande final dos fogos) */
+  acao?: ReactNode
 }
 
 /** Botões e legendas por cima da cena 3D dos passeios */
-export function PainelTour({ paradas, i, onIr, sobretitulo, livre, onLivre, onSair, painelLivre, extras, recentrar }: PainelProps) {
+export function PainelTour({ paradas, i, onIr, sobretitulo, livre, onLivre, onSair, painelLivre, extras, recentrar, acao }: PainelProps) {
   const parada = paradas[i]
   const ir = (d: number) => onIr((i + d + paradas.length) % paradas.length)
 
@@ -297,6 +299,7 @@ export function PainelTour({ paradas, i, onIr, sobretitulo, livre, onLivre, onSa
                   <p className="sobretitulo text-[#9A6B3C]">{sobretitulo}</p>
                   <h2 className="mt-2 font-serif text-[1.95rem] leading-none font-medium">{parada.nome}</h2>
                   <p className="mx-auto mt-2 max-w-72 font-serif text-lg leading-snug text-grafite/70 italic">{parada.frase}</p>
+                  {acao && <div className="mt-3 flex justify-center">{acao}</div>}
                 </motion.div>
               </AnimatePresence>
               <div className="mt-4 flex items-center gap-3">

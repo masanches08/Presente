@@ -1,6 +1,6 @@
-import { Environment } from '@react-three/drei'
-import { useFrame } from '@react-three/fiber'
-import { Suspense, useLayoutEffect, useMemo, useRef } from 'react'
+import { Environment, useCursor } from '@react-three/drei'
+import { useFrame, useThree } from '@react-three/fiber'
+import { Suspense, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import {
   BoxGeometry,
   BufferGeometry,
@@ -19,23 +19,43 @@ import {
   SphereGeometry,
   Vector2,
   Vector3,
+  type AmbientLight,
   type DirectionalLight,
+  type Fog,
+  type HemisphereLight,
+  type PointLight,
 } from 'three'
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { criarArranjos, materialRosas } from '../mundo/arranjos'
-import { Coqueiro, matFolhas } from '../mundo/Arvore'
+import { Coqueiral, Coqueiro, matFolhas } from '../mundo/Arvore'
 import { criarTufo } from '../mundo/Grama'
 import { Passaros } from '../mundo/Passaros'
 import { relevoReal, texReal } from '../lib/texturasReais'
 import { texJuta, texLavanda, texMadeira } from '../mundo/texturas'
 import { aplicarVento, vento } from '../mundo/vento'
 import { texMarmore } from '../casa/texturas'
-import { Areia, CeuPorDoSol, MarPorDoSol, NuvensPorDoSol, SOL } from './Ambiente'
-import { LOUNGE, montarCasamento, type Inst } from './montar'
+import { Areia, Arredores, CeuPorDoSol, MarPorDoSol, NuvensPorDoSol, SOL } from './Ambiente'
+import { LOUNGE, montarCasamento, PISTA, TENDA, type Inst } from './montar'
+import { CLARAO, NOITE } from './noite'
 import { texPalha, texPista, texPistaLuz, texTrelica } from './texturas'
 
 export type Qualidade = 'alta' | 'media'
+
+// pôr do sol → noite (parada dos fogos): cor e força de cada luz
+const LUZES = {
+  ceuDia: new Color('#EDB9CB'),
+  ceuNoite: new Color('#5A68A8'),
+  chaoDia: new Color('#D9B089'),
+  chaoNoite: new Color('#2A2A44'),
+  ambDia: new Color('#FFD7BF'),
+  ambNoite: new Color('#7F8CC0'),
+  solDia: new Color('#FFB47A'),
+  solNoite: new Color('#AFC0FF'),
+  nevoaDia: new Color('#F1B4A6'),
+  nevoaNoite: new Color('#1E2448'),
+}
+const misturar = (alvo: Color, a: Color, b: Color, t: number) => alvo.copy(a).lerp(b, t)
 
 // ---------------- geometrias repetidas ----------------
 
@@ -170,6 +190,12 @@ function materiais() {
     florzinha: new MeshStandardMaterial({ color: '#FFFFFF', emissive: '#FFF2E6', emissiveIntensity: 0.25, roughness: 0.7 }),
     guardanapo: std('#C9B8E4', { roughness: 1 }),
     prato: std('#FFFFFF', { roughness: 0.3 }),
+    // madeira pintada de branco (gazebo, bancos da capela)
+    branco: std('#F7F2EA', { roughness: 0.55 }),
+    // o vidro grande da capela: quase invisível, só o reflexo do céu
+    vitral: new MeshStandardMaterial({ color: '#E4F1F4', transparent: true, opacity: 0.13, roughness: 0.04, metalness: 0.15, envMapIntensity: 1.6, depthWrite: false, side: DoubleSide }),
+    // sombrinha suave no chão embaixo da capela
+    sombra: new MeshBasicMaterial({ color: '#3A2418', transparent: true, opacity: 0.18, depthWrite: false }),
   } as Record<string, Material>
 }
 
@@ -222,12 +248,62 @@ export function CenaCasamento({ qualidade }: { qualidade: Qualidade }) {
   // as velas tremulam e o vento anda
   useFrame(({ clock }) => {
     const t = clock.elapsedTime
+    agora.current = t
     vento.uTempo.value = t
     const k = 1 + Math.sin(t * 11) * 0.08 + Math.sin(t * 17.3) * 0.06
     ;(mats.chama as MeshBasicMaterial).color.setRGB(3.2 * k, 2.1 * k, 0.9 * k)
+    // a pista em modo festa: as luzes do chão trocam de cor no ritmo (uns 15 s depois do toque)
+    const pista = mats.pista as MeshStandardMaterial
+    const resta = disco.current - t
+    if (resta > 0) {
+      const batida = Math.pow(0.5 + 0.5 * Math.cos(t * Math.PI * 4), 3)
+      pista.emissive.setHSL((t * 0.35) % 1, 0.9, 0.55)
+      pista.emissiveIntensity = (1.4 + batida * 2.2) * Math.min(1, resta)
+    } else if (pista.emissiveIntensity !== 1.6 || resta > -0.1) {
+      pista.emissive.set('#FFFFFF')
+      pista.emissiveIntensity = 1.6
+    }
   })
+  // tocou na pista: modo festa
+  const disco = useRef(-1)
+  const agora = useRef(0)
+  const [sobrePista, setSobrePista] = useState(false)
+  useCursor(sobrePista)
 
   const sol = useRef<DirectionalLight>(null)
+  const ceu = useRef<HemisphereLight>(null)
+  const amb = useRef<AmbientLight>(null)
+  const quentes = useRef<(PointLight | null)[]>([])
+  const scene = useThree((st) => st.scene)
+  // as nuvens trocam de cor uma vez só (rosadas no pôr do sol, azuladas de noite)
+  const [escuro, setEscuro] = useState(false)
+  useFrame(() => {
+    const n = NOITE.valor
+    if (ceu.current) {
+      misturar(ceu.current.color, LUZES.ceuDia, LUZES.ceuNoite, n)
+      misturar(ceu.current.groundColor, LUZES.chaoDia, LUZES.chaoNoite, n)
+      ceu.current.intensity = 1.0 - n * 0.45
+      // cada estouro de fogos acende a cena de leve, com a cor dele (sem luz a mais: fica leve)
+      const k = Math.min(1, CLARAO.forca) * n
+      if (k > 0.002) {
+        ceu.current.color.lerp(CLARAO.cor, k * 0.6)
+        ceu.current.intensity += k * 0.9
+      }
+    }
+    if (amb.current) {
+      misturar(amb.current.color, LUZES.ambDia, LUZES.ambNoite, n)
+      amb.current.intensity = 0.3 - n * 0.08
+    }
+    if (sol.current) {
+      misturar(sol.current.color, LUZES.solDia, LUZES.solNoite, n)
+      sol.current.intensity = 2.6 - n * 2.1
+    }
+    // as luzinhas da festa brilham mais de noite
+    const base = [30, 7, 4]
+    quentes.current.forEach((l, k) => l && (l.intensity = base[k] * (1 + n * 0.9)))
+    if (scene.fog) misturar((scene.fog as Fog).color, LUZES.nevoaDia, LUZES.nevoaNoite, n)
+    if (n > 0.5 !== escuro) setEscuro(n > 0.5)
+  })
   const dirLuz = useMemo(() => new Vector3(SOL.x, 0.24, SOL.z).normalize(), [])
   useLayoutEffect(() => {
     const l = sol.current
@@ -249,8 +325,8 @@ export function CenaCasamento({ qualidade }: { qualidade: Qualidade }) {
       <fog attach="fog" args={['#F1B4A6', 90, 430]} />
 
       {/* luz dourada do sol se pondo + o céu rosado */}
-      <hemisphereLight args={['#EDB9CB', '#D9B089', 1.0]} />
-      <ambientLight color="#FFD7BF" intensity={0.3} />
+      <hemisphereLight ref={ceu} args={['#EDB9CB', '#D9B089', 1.0]} />
+      <ambientLight ref={amb} color="#FFD7BF" intensity={0.3} />
       <directionalLight
         ref={sol}
         intensity={2.6}
@@ -267,15 +343,16 @@ export function CenaCasamento({ qualidade }: { qualidade: Qualidade }) {
         shadow-normalBias={0.04}
       />
       {/* o brilho quente das velas e luzinhas */}
-      <pointLight position={[17.5, 3.2, 0]} color="#FFC37A" intensity={30} distance={22} decay={1.5} />
-      <pointLight position={[0, 2.4, -6.2]} color="#FFC37A" intensity={7} distance={9} decay={1.5} />
-      <pointLight position={[LOUNGE.x, 3.0, LOUNGE.z]} color="#FFC37A" intensity={4} distance={9} decay={1.5} />
+      <pointLight ref={(l) => void (quentes.current[0] = l)} position={[17.5, 3.2, 0]} color="#FFC37A" intensity={30} distance={22} decay={1.5} />
+      <pointLight ref={(l) => void (quentes.current[1] = l)} position={[0, 2.4, -6.2]} color="#FFC37A" intensity={7} distance={9} decay={1.5} />
+      <pointLight ref={(l) => void (quentes.current[2] = l)} position={[LOUNGE.x, 3.0, LOUNGE.z]} color="#FFC37A" intensity={4} distance={9} decay={1.5} />
 
       <Areia />
+      <Arredores />
       <MarPorDoSol />
 
       {Object.entries(dados.pecas).map(([nome, geo]) => (
-        <mesh key={nome} geometry={geo} material={mats[nome]} castShadow={!['chama', 'papel', 'cristal', 'vidro', 'pista'].includes(nome)} receiveShadow />
+        <mesh key={nome} geometry={geo} material={mats[nome]} castShadow={!['chama', 'papel', 'cristal', 'vidro', 'pista', 'vitral', 'sombra'].includes(nome)} receiveShadow />
       ))}
       <mesh geometry={dados.tecidos} material={chiffon} userData={{ semSombra: true }} />
       {dados.lavanda && <mesh geometry={dados.lavanda} material={lavanda} />}
@@ -303,9 +380,24 @@ export function CenaCasamento({ qualidade }: { qualidade: Qualidade }) {
       {I.coqueiros.map((c, i) => (
         <Coqueiro key={i} position={c.pos} rotation-y={c.giro} altura={c.alt} curva={1.3} />
       ))}
+      <Coqueiral itens={I.coqueiral} />
+      {/* área de toque da pista de dança */}
+      <mesh
+        position={[(PISTA.x0 + PISTA.x1) / 2, TENDA.piso + 0.25, (PISTA.z0 + PISTA.z1) / 2]}
+        onClick={(e) => {
+          e.stopPropagation()
+          if (e.delta > 12) return
+          disco.current = agora.current + 15
+        }}
+        onPointerOver={() => setSobrePista(true)}
+        onPointerOut={() => setSobrePista(false)}
+      >
+        <boxGeometry args={[PISTA.x1 - PISTA.x0, 0.5, PISTA.z1 - PISTA.z0]} />
+        <meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} />
+      </mesh>
 
       <Suspense fallback={null}>
-        <NuvensPorDoSol poucas={qualidade !== 'alta'} />
+        <NuvensPorDoSol poucas={qualidade !== 'alta'} noite={escuro} />
         <Passaros />
       </Suspense>
     </>

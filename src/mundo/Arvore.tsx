@@ -245,6 +245,37 @@ function materiaisCoqueiro() {
   return matsCoqueiro
 }
 
+/**
+ * Um coqueiral inteiro numa peça só (todos os troncos juntos + todas as folhas juntas):
+ * pra encher o fundo de coqueiros gastando o mesmo que um coqueiro. Sem sombra (fica longe).
+ */
+export function Coqueiral({ itens }: { itens: { pos: [number, number, number]; alt: number; giro: number; curva?: number }[] }) {
+  const { tronco, folhas } = useMemo(() => {
+    const troncos: BufferGeometry[] = []
+    const copas: BufferGeometry[] = []
+    for (const c of itens) {
+      const g = geoCoqueiro(c.alt, c.curva ?? 1.3)
+      for (const [lista, base] of [
+        [troncos, g.tronco],
+        [copas, g.folhas],
+      ] as const) {
+        const k = base.clone()
+        k.rotateY(c.giro)
+        k.translate(...c.pos)
+        lista.push(k)
+      }
+    }
+    return { tronco: mergeGeometries(troncos)!, folhas: mergeGeometries(copas)! }
+  }, [itens])
+  const m = materiaisCoqueiro()
+  return (
+    <>
+      <mesh geometry={tronco} material={m.tronco} receiveShadow />
+      <mesh geometry={folhas} material={m.folha} />
+    </>
+  )
+}
+
 /** Coqueiro de praia, com folhas compridas de verdade. */
 export function Coqueiro({ altura = 7, curva = 1.4, ...props }: Props & { altura?: number; curva?: number }) {
   const { tronco, folhas } = useMemo(() => geoCoqueiro(altura, curva), [altura, curva])
