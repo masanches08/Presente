@@ -1,7 +1,7 @@
 import { Preload } from '@react-three/drei'
 import { Canvas } from '@react-three/fiber'
 import { AnimatePresence, motion } from 'framer-motion'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Carregando } from '../components/Carregando'
 import { CLASSE_CANVAS, Desempenho, dprInicial, ehCelular, GL_LEVE, LimiteFps, MedidorDebug, SombraCongelada, Vinheta } from '../lib/leve'
 import { CameraTour, PainelTour, type CamTour } from '../components/Tour'
@@ -22,7 +22,8 @@ const CAMERAS: Record<ParadaCasamento, CamTour> = {
   corredor: { pos: [0, 1.5, 10.8], alvo: [0, 1.25, -10] },
   // chega do lado de fora (a fachada, o sino) e depois entra pela porta até o altar, com o mar atrás do vidro
   // de frente pra porta, olhando o sino lá em cima (a corda desce até perto da porta)
-  capela: { pos: [-30, 2.2, 11.2], alvo: [-30, 5.0, 4.5] },
+  // de frente pra porta, com a câmera nivelada (olhando só um pouquinho pra cima: o sino aparece lá no alto)
+  capela: { pos: [-30, 3.4, 13.5], alvo: [-30, 4.2, 4.5] },
   festa: { pos: [12.1, 2.5, 5.2], alvo: [24.5, 0.8, 1.6] },
   pista: { pos: [16, 2.8, 5.4], alvo: [10.2, 0.5, -0.6] },
   noivos: { pos: [21.3, 2.2, 1.6], alvo: [26.2, 0.95, -0.6] },
@@ -85,7 +86,12 @@ export default function CasamentoTour({ onSair }: { onSair: () => void }) {
   // o touro mecânico (sempre funcionando; tocar acelera) e o show de fogos (só na última parada, de noite)
   const [nivelTouro, setNivelTouro] = useState(0)
   const acelerar = () => setNivelTouro((n) => (n + 1) % NIVEIS.length)
-  const [finale, setFinale] = useState(0)
+  // o show de fogos: enquanto ele acontece, o cartão de baixo some (volta quando acaba)
+  const [showAcabou, setShowAcabou] = useState(false)
+  const fimDoShow = useCallback(() => setShowAcabou(true), [])
+  // "piscar" suave entre lugares longe (a câmera não atravessa a praia deslizando)
+  const [piscando, setPiscando] = useState(false)
+  const piscar = useCallback((v: boolean) => setPiscando(v), [])
   // o sino da capela e as lanternas do píer
   const [toquesSino, setToquesSino] = useState(0)
   const [lanternas, setLanternas] = useState(0)
@@ -99,20 +105,15 @@ export default function CasamentoTour({ onSair }: { onSair: () => void }) {
     const t = window.setTimeout(() => setLanternas((n) => n + 1), 1800)
     return () => window.clearTimeout(t)
   }, [livre, parada.id])
-  // só os fogos têm botão no painel; o resto se faz direto na cena (a dica flutua lá em cima)
-  const acao =
-    parada.id === 'fogos' ? (
-      <button onClick={() => setFinale((n) => n + 1)} className="rounded-full bg-grafite px-5 py-2.5 text-sm font-medium text-creme shadow-suave active:scale-[0.97]">
-        ✨ grande final
-      </button>
-    ) : null
+  useEffect(() => {
+    if (!noFogos) setShowAcabou(false)
+  }, [noFogos])
   const dica = livre
     ? null
     : {
         capela: '👆 puxe a corda do sino pra baixo',
-        pier: '✋ segure pra acender · arraste pra cima',
+        pier: '✋ segure pra acender a lanterna',
         touro: '👆 toque no touro',
-        fogos: '✋ segure no céu e solte',
       }[parada.id as string] ?? null
 
   return (
@@ -134,13 +135,30 @@ export default function CasamentoTour({ onSair }: { onSair: () => void }) {
         <CenaCasamento qualidade={qualidade} />
         <RelogioNoite alvo={noFogos ? 1 : 0} />
         <TouroMecanico nivel={nivelTouro} onTocar={acelerar} />
-        <Fogos ativo={noFogos} finale={finale} />
+        <Fogos ativo={noFogos} onFim={fimDoShow} />
         <SinoCapela toques={toquesSino} onTocar={() => setToquesSino((n) => n + 1)} gesto={!livre && parada.id === 'capela'} />
-        <Lanternas soltar={lanternas} gesto={!livre && parada.id === 'pier'} />
+        <Lanternas soltar={lanternas} gesto={!livre && parada.id === 'pier'} noite={false} />
         {/* entrada de cinema: vem lá do mar até o altar */}
-        <CameraTour cam={cam} livre={livre} recentrar={recentrar} onFora={setFora} vistaLivre={VISTA_LIVRE} distancia={[2, 70]} area={AREA_LIVRE} chao={chaoDaPraia} entrada={[0, 9, -85]} duracaoEntrada={3.2} fovMax={80} recuoMax={1.4} />
+        <CameraTour cam={cam} livre={livre} onPiscar={piscar} recentrar={recentrar} onFora={setFora} vistaLivre={VISTA_LIVRE} distancia={[2, 70]} area={AREA_LIVRE} chao={chaoDaPraia} entrada={[0, 9, -85]} duracaoEntrada={3.2} fovMax={80} recuoMax={1.4} />
       </Canvas>
       <Vinheta forca={0.36} />
+      {/* "piscar" entre lugares longe */}
+      <div className={`pointer-events-none fixed inset-0 bg-[#F6E3D8] transition-opacity duration-400 ${piscando ? 'opacity-100' : 'opacity-0'}`} />
+      {/* a noite dos fogos começa: uma frase aparece no céu e some sozinha */}
+      <AnimatePresence>
+        {noFogos && !showAcabou && (
+          <motion.p
+            key="noite"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: [0, 1, 1, 0] }}
+            transition={{ duration: 7, times: [0, 0.2, 0.7, 1], delay: 0.8 }}
+            className="pointer-events-none fixed inset-x-0 z-10 text-center font-serif text-[2.1rem] text-white italic"
+            style={{ top: '22%', textShadow: '0 2px 18px rgb(20 20 60 / 0.6)' }}
+          >
+            fica aqui comigo… e olha pro céu ✨
+          </motion.p>
+        )}
+      </AnimatePresence>
 
       <PainelTour
         paradas={PASSEIO_CASAMENTO}
@@ -151,7 +169,7 @@ export default function CasamentoTour({ onSair }: { onSair: () => void }) {
         onLivre={() => setLivre((v) => !v)}
         onSair={onSair}
         recentrar={{ visivel: fora, onClick: () => setRecentrar((n) => n + 1) }}
-        acao={acao}
+        semCartao={noFogos && !showAcabou}
         painelLivre={
           <>
             <p className="font-serif text-lg text-grafite/75 italic">toque no touro, no sino da capela, no gazebo do píer e na pista ✨</p>

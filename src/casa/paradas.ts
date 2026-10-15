@@ -34,7 +34,7 @@ export const CAMERAS: Record<ParadaId, Camera> = {
   suite: {
     pos: [4.15, 5.55, -15.55],
     alvo: [-1.3, 3.8, -10.2],
-    depois: { pos: [2.9, 5.45, -9.6], alvo: [0.5, 4.4, -15.3], espera: 2.5 },
+    depois: { pos: [2.9, 5.45, -9.6], alvo: [0.5, 4.4, -15.3], espera: 1 },
     grupo: 'q4',
     onde: '2º andar',
     luzes: [[0.5, 5.9, -11.2], [-4.4, 4.0, -12.4]],

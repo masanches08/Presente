@@ -1,5 +1,5 @@
 import { useFrame, useThree } from '@react-three/fiber'
-import { useEffect, useMemo, useRef } from 'react'
+import { useMemo, useRef } from 'react'
 import {
   AdditiveBlending,
   BufferAttribute,
@@ -7,8 +7,6 @@ import {
   DoubleSide,
   InstancedBufferAttribute,
   InstancedBufferGeometry,
-  Plane,
-  Raycaster,
   ShaderMaterial,
   Vector2,
   Vector3,
@@ -19,7 +17,9 @@ import { CONFIG } from '../config'
 import { NIVEL_MAR } from './Ambiente'
 import { CLARAO as CLARAO_CENA, NOITE } from './noite'
 
-// Show de fogos sobre o mar (parada "Quando a noite cair").
+// Show de fogos sobre o mar (parada "Quando a noite cair"): acontece sozinho, coreografado, quando escurece.
+// Abre devagar com um salgueiro dourado, vai crescendo em ouro, rosa e champanhe, desenha um coração
+// e as nossas iniciais no céu, e termina num final dourado. Depois fica a noite calma, com um fogo de vez em quando.
 // Cada faísca é desenhada como um risco de luz na direção em que ela anda (mais comprido quanto mais rápida):
 // assim dá pra ver a dinâmica toda — o foguete subindo, o estouro abrindo, as faíscas fazendo a curva e caindo.
 // Tipos: peônia (que troca de cor), crisântemo (com rastro), salgueiro e kamuro (ouro caindo devagar),
@@ -38,14 +38,14 @@ const CLARAO = 5
 /** A distância do "céu" dos fogos (o painel onde eles estouram) */
 const Z_CEU = -82
 const BALSA = new Vector3(0, NIVEL_MAR + 0.7, Z_CEU)
-/** O "céu" onde os toques viram estouros */
-const CEU = new Plane(new Vector3(0, 0, 1), -Z_CEU)
-/** Quanto tempo segurando pra carga total (s) */
-const CARREGAR = 1.4
 
 // (o shader escreve a cor direto na tela, então ela fica no padrão da tela, sRGB)
 const corDe = (hex: string) => new Color(hex).convertLinearToSRGB()
-const CORES = ['#FF2E63', '#FFB020', '#2E9BFF', '#9D4DFF', '#22E37A', '#FF4A3D', '#FF5CC8', '#FFE03D', '#3DE0FF']
+const CORES = ['#FF6F9A', '#FFB8CF', '#FFD27A', '#FFE7C2', '#FFFFFF', '#D9A8FF', '#FF5C7A', '#FFB36B']
+const ROSA = corDe('#FF6F9A')
+const ROSA_CLARO = corDe('#FFB8CF')
+const CHAMPANHE = corDe('#FFE7C2')
+const LAVANDA = corDe('#D9A8FF')
 const OURO = corDe('#FFC870')
 const OURO_CLARO = corDe('#FFE6B0')
 const PRATA = corDe('#EAF2FF')
@@ -188,7 +188,7 @@ const FRAGMENTO = /* glsl */ `
   }
 `
 
-export function Fogos({ ativo, finale }: { ativo: boolean; finale: number }) {
+export function Fogos({ ativo, onFim }: { ativo: boolean; onFim: () => void }) {
   const { gl, camera } = useThree()
   const balsa = useRef<Group>(null)
 
@@ -244,8 +244,6 @@ export function Fogos({ ativo, finale }: { ativo: boolean; finale: number }) {
       relogio: 0,
       /** quantas faíscas estavam vivas no quadro anterior (sem nenhuma, não precisa mandar nada pra placa de vídeo) */
       vivasAntes: 0,
-      /** quando ela lançou o último (enquanto ela brinca, o show sozinho dá um tempo) */
-      ultimoToque: -99,
       proximoAuto: 0,
       salvaInicial: false,
       texto: null as [number, number][] | null,
@@ -429,80 +427,51 @@ export function Fogos({ ativo, finale }: { ativo: boolean; finale: number }) {
   }
   const pontoAleatorio = () => new Vector3(sorteio(-38, 38), sorteio(20, 36), Z_CEU)
 
-  // o gesto: segurar o dedo no céu carrega o fogo (chafariz na balsa + a mira brilhando lá em cima),
-  // arrastar muda o lugar, e soltar lança — quanto mais carregado, maior (carga total = bombão)
-  const carga = useRef<{ t0: number; alvo: Vector3 } | null>(null)
-  /** Lança o fogo com a carga (0..1) */
-  const disparar = (alvo: Vector3, k: number) => {
-    s.ultimoToque = s.relogio
-    if (k >= 0.97) lancar(alvo, 'bombao', corQualquer(), 1.15)
-    else if (k < 0.25) lancar(alvo, qualquer(['peonia', 'anel'] as const), corQualquer(), 0.62)
-    else lancar(alvo, qualquer(['crisantemo', 'peonia', 'crossette', 'palmeira', 'salgueiro', 'anel'] as const), corQualquer(), 0.75 + 0.3 * k)
-  }
-  useEffect(() => {
-    if (!ativo) {
-      carga.current = null
-      return
-    }
-    const el = gl.domElement
-    const ray = new Raycaster()
-    const ponto = (e: PointerEvent) => {
-      const r = el.getBoundingClientRect()
-      ray.setFromCamera(new Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1), camera)
-      const p = new Vector3()
-      if (!ray.ray.intersectPlane(CEU, p)) return null
-      return p.set(Math.max(-66, Math.min(66, p.x)), Math.max(16, Math.min(48, p.y)), Z_CEU)
-    }
-    const desce = (e: PointerEvent) => {
-      const p = ponto(e)
-      if (p) carga.current = { t0: s.relogio, alvo: p }
-    }
-    const move = (e: PointerEvent) => {
-      if (!carga.current) return
-      const p = ponto(e)
-      if (p) carga.current.alvo.copy(p)
-    }
-    const sobe = () => {
-      const c = carga.current
-      if (!c) return
-      carga.current = null
-      disparar(c.alvo, Math.min(1, (s.relogio - c.t0) / CARREGAR))
-    }
-    el.addEventListener('pointerdown', desce)
-    window.addEventListener('pointermove', move)
-    window.addEventListener('pointerup', sobe)
-    window.addEventListener('pointercancel', sobe)
-    return () => {
-      el.removeEventListener('pointerdown', desce)
-      window.removeEventListener('pointermove', move)
-      window.removeEventListener('pointerup', sobe)
-      window.removeEventListener('pointercancel', sobe)
-    }
-  }, [ativo, gl, camera]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // o grande final: abertura, cascata dourada com palmeiras, coração, as iniciais, a coroa de ouro e a purpurina
-  useEffect(() => {
-    if (!finale || !ativo) return
+  /** O show inteiro, marcado no relógio a partir de agora (uns 40 s) */
+  const show = () => {
     const t0 = s.relogio
-    const f = s.fila
-    const em = (d: number, fazer: () => void) => f.push({ quando: t0 + d, fazer })
-    const abertura: Estouro[] = ['peonia', 'crossette', 'anel', 'crisantemo', 'peonia', 'crossette', 'crisantemo', 'anel', 'peonia', 'purpurina', 'crisantemo', 'peonia']
-    abertura.forEach((tipo, k) => em(k * 0.26, () => lancar(new Vector3((k % 2 ? 1 : -1) * sorteio(6, 38), sorteio(22, 37), Z_CEU), tipo)))
-    em(3.4, () => {
-      s.fontes.push({ ate: s.relogio + 4.2, x0: -44, x1: 44, y: 40 })
+    const em = (d: number, fazer: () => void) => s.fila.push({ quando: t0 + d, fazer })
+    const P = (x: number, y: number) => new Vector3(x, y, Z_CEU)
+    // abertura: um salgueiro dourado sozinho, subindo devagar
+    em(0.4, () => lancar(P(0, 33), 'salgueiro', OURO, 0.95))
+    // dois rosas, um de cada lado
+    em(4.0, () => lancar(P(-24, 27), 'peonia', ROSA, 0.85))
+    em(4.7, () => lancar(P(24, 27), 'peonia', ROSA, 0.85))
+    // champanhe no alto, com rastro
+    em(7.2, () => lancar(P(0, 36), 'crisantemo', CHAMPANHE, 0.95))
+    // vai crescendo: rosa, ouro, lavanda, anel
+    const meio: [number, number, Estouro, Color][] = [
+      [-30, 24, 'peonia', ROSA_CLARO],
+      [18, 32, 'crisantemo', OURO],
+      [-8, 30, 'anel', ROSA],
+      [32, 25, 'peonia', LAVANDA],
+      [-20, 34, 'crossette', OURO],
+      [8, 26, 'peonia', ROSA_CLARO],
+    ]
+    meio.forEach(([x, y, tipo, cor], k) => em(10 + k * 0.9, () => lancar(P(x, y), tipo, cor, 0.85)))
+    // três palmeiras douradas juntas
+    for (const x of [-26, 0, 26]) em(16.5 + Math.abs(x) * 0.01, () => lancar(P(x, 28), 'palmeira', OURO, 0.9))
+    // o coração (e dois anéis rosinha dos lados)
+    em(20.5, () => forma(P(0, 30), pontosDoCoracao(13), [corDe('#FF4F78'), corDe('#FF7A9A'), corDe('#FF3060')]))
+    for (const x of [-34, 34]) em(21, () => lancar(P(x, 25), 'anel', ROSA_CLARO, 0.75))
+    // as nossas iniciais, em dourado
+    em(24.5, () => {
+      s.texto ??= pontosDoTexto()
+      forma(P(0, 32.5), s.texto, [corDe('#FFD27A'), corDe('#FFE7A8'), corDe('#FFC45C')])
+    })
+    // purpurina prateada dos lados enquanto as iniciais brilham
+    for (let k = 0; k < 4; k++) em(25.2 + k * 0.5, () => lancar(P((k % 2 ? 1 : -1) * sorteio(28, 40), sorteio(19, 26)), 'purpurina', CHAMPANHE, 0.6))
+    // o final: cascata dourada, uma salva subindo de ritmo e a coroa de ouro (kamuro)
+    em(29, () => {
+      s.fontes.push({ ate: s.relogio + 5, x0: -44, x1: 44, y: 40 })
       acender(OURO, 0.8)
     })
-    for (const x of [-36, 0, 36]) em(3.6 + Math.abs(x) * 0.008, () => lancar(new Vector3(x * 0.82, 31, Z_CEU), 'palmeira'))
-    em(6.8, () => forma(new Vector3(0, 30, Z_CEU), pontosDoCoracao(14), [corDe('#FF4F78'), corDe('#FF7A9A'), corDe('#FF3060')]))
-    for (const x of [-40, 40]) em(7.1, () => lancar(new Vector3(x * 0.82, 28, Z_CEU), 'anel', corDe('#FFC2E2')))
-    em(9.8, () => {
-      s.texto ??= pontosDoTexto()
-      forma(new Vector3(0, 32.5, Z_CEU), s.texto, [corDe('#FFD27A'), corDe('#FFE7A8'), corDe('#FFC45C')])
-    })
-    for (let k = 0; k < 6; k++) em(10.2 + k * 0.35, () => lancar(new Vector3((k % 2 ? 1 : -1) * sorteio(28, 44), sorteio(19, 29), Z_CEU), 'purpurina'))
-    for (let k = 0; k < 5; k++) em(13.2 + k * 0.12, () => lancar(new Vector3(-36 + k * 18, 35, Z_CEU), 'kamuro'))
-    for (let k = 0; k < 10; k++) em(15.6 + k * 0.18, () => lancar(pontoAleatorio(), qualquer(['purpurina', 'peonia', 'crisantemo'] as const)))
-  }, [finale]) // eslint-disable-line react-hooks/exhaustive-deps
+    for (let k = 0; k < 14; k++) em(29.4 + k * (0.42 - k * 0.018), () => lancar(pontoAleatorio(), qualquer(['peonia', 'crisantemo', 'anel', 'purpurina'] as const), qualquer([ROSA, OURO, CHAMPANHE, ROSA_CLARO, LAVANDA]), 0.85))
+    for (let k = 0; k < 5; k++) em(35.2 + k * 0.1, () => lancar(P(-34 + k * 17, 35), 'kamuro', OURO_CLARO, 1))
+    em(36.4, () => lancar(P(0, 30), 'bombao', ROSA, 1.05))
+    em(41, () => onFim())
+  }
 
   const p = useMemo(() => new Vector3(), [])
   const tmp = useMemo(() => new Color(), [])
@@ -522,15 +491,15 @@ export function Fogos({ ativo, finale }: { ativo: boolean; finale: number }) {
     }
     if (balsa.current) balsa.current.visible = noite > 0.05
 
-    // o show sozinho (pra ela ver mesmo sem tocar) + uma salva de boas-vindas quando escurece
-    if (ativo && noite > 0.75) {
+    // escureceu: começa o show; acabado, só um fogo de vez em quando, bem calmo
+    if (ativo && noite > 0.8) {
       if (!s.salvaInicial) {
         s.salvaInicial = true
-        ;(['crisantemo', 'palmeira', 'peonia'] as const).forEach((tipo, k) => s.fila.push({ quando: s.relogio + k * 0.8, fazer: () => lancar(pontoAleatorio(), tipo) }))
-        s.proximoAuto = s.relogio + 5.5
-      } else if (s.relogio > s.proximoAuto && s.fila.length === 0 && !carga.current && s.relogio - s.ultimoToque > 6) {
-        lancar(pontoAleatorio())
-        s.proximoAuto = s.relogio + sorteio(2.4, 4.2)
+        show()
+        s.proximoAuto = s.relogio + 46
+      } else if (s.relogio > s.proximoAuto && s.fila.length === 0) {
+        lancar(pontoAleatorio(), qualquer(['salgueiro', 'peonia', 'crisantemo'] as const), qualquer([ROSA, OURO, CHAMPANHE]), 0.8)
+        s.proximoAuto = s.relogio + sorteio(5, 8)
       }
     }
     if (!ativo) {
@@ -545,27 +514,6 @@ export function Fogos({ ativo, finale }: { ativo: boolean; finale: number }) {
         f.fazer()
       }
 
-    // carregando: chafariz de faíscas na balsa (cada vez mais alto) e a mira brilhando no céu
-    const c = carga.current
-    if (c && ativo) {
-      const k = Math.min(1, (s.relogio - c.t0) / CARREGAR)
-      const n = Math.max(1, Math.round(dt * 30 * (1 + 5 * k)))
-      for (let i = 0; i < n; i++) {
-        p.copy(BALSA).add(new Vector3(sorteio(-3, 3), 0.4, sorteio(-1, 1)))
-        soltar(FAISCA, p, sorteio(-1.5, 1.5), sorteio(8, 10) + 16 * k, sorteio(-1, 1), Math.random() < 0.5 ? OURO : COR_RASTRO, { dur: 0.7 + 0.6 * k, tam: 0.55, rastro: 0.06, grav: 9 })
-      }
-      const pulso = 0.5 + 0.5 * Math.sin(s.relogio * (k >= 1 ? 26 : 8))
-      tmp.copy(k >= 1 ? OURO_CLARO : PRATA)
-      soltar(CLARAO, c.alvo, 0, 0, 0, tmp, { dur: 0.07, tam: 3 + 9 * k + pulso * (2 + 4 * k) })
-      // faíscas girando em volta da mira (mais faíscas e mais juntinhas conforme carrega)
-      const m = 3 + Math.floor(7 * k)
-      for (let i = 0; i < m; i++) {
-        const a = s.relogio * (2.5 + 4 * k) + (i / m) * Math.PI * 2
-        const r = 4.2 - 2.2 * k
-        p.set(c.alvo.x + Math.cos(a) * r, c.alvo.y + Math.sin(a) * r, c.alvo.z)
-        soltar(FAISCA, p, 0, 0, 0, k >= 1 ? OURO_CLARO : OURO, { dur: 0.07, tam: 0.7 })
-      }
-    }
 
     // a cascata dourada (grande final): uma linha lá no alto "chovendo" ouro
     for (let k = s.fontes.length - 1; k >= 0; k--) {
@@ -683,6 +631,11 @@ export function Fogos({ ativo, finale }: { ativo: boolean; finale: number }) {
         s.tipo[i] = MORTA
         s.alfa[i] = 0
         continue
+      }
+      if (tipo === FAISCA && k > 0.45) {
+        const esfria = 1 - dt * 0.9 * (k - 0.45)
+        s.cor[j + 1] *= esfria
+        s.cor[j + 2] *= esfria * esfria
       }
       let a = k < 0.62 ? 1 : 1 - (k - 0.62) / 0.38
       if (s.pisca[i] && k > 0.45) a *= Math.sin(s.vida[i] * 31 + s.semente[i] * 50) > 0.1 ? 1.25 : 0.08

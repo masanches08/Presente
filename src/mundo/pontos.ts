@@ -25,7 +25,7 @@ export interface Ponto {
   distancia: number
 }
 
-// A ordem aqui é a ordem das setinhas ‹ › na legenda.
+// (a ordem das setinhas ‹ › na legenda fica em ORDEM, lá embaixo)
 // Alturas (y) de marcador e alvo são medidas a partir do chão.
 export const PONTOS: Ponto[] = [
   {
@@ -110,6 +110,10 @@ PONTOS.push({
   direcao: [-0.8, 0.36, 0.6],
   distancia: 12.5,
 })
+
+// A ordem do passeio pelas setinhas ‹ › (depois das fotos, volta pra casa)
+const ORDEM: PontoId[] = ['lar', 'futevolei', 'casamento', 'luademel', 'dias', 'cartas', 'fotos']
+PONTOS.sort((a, b) => ORDEM.indexOf(a.id) - ORDEM.indexOf(b.id))
 
 export const pontoPorId = (id: PontoId) => PONTOS.find((p) => p.id === id)!
 

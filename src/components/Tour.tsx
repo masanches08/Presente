@@ -175,7 +175,8 @@ export function CameraTour({
       if (!d) return
       timers.push(
         window.setTimeout(() => {
-          c.smoothTime = 2.2
+          // (rápido quando é só virar ali mesmo; mais calmo quando anda bastante, como no píer)
+          c.smoothTime = 1 + Math.min(1.2, Math.hypot(d.pos[0] - cam.pos[0], d.pos[1] - cam.pos[1], d.pos[2] - cam.pos[2]) / 20)
           c.setLookAt(...recuar(d.pos, d.alvo, recuo), ...d.alvo, true)
         }, atraso + d.espera * 1000),
       )
@@ -189,10 +190,12 @@ export function CameraTour({
       virarDepois(duracaoEntrada * 1000)
       return limpar
     }
+    // desliza até a próxima parada; quanto mais longe, mais devagar (assim não fica brusco nem enjoa)
+    const dist = Math.hypot(cam.pos[0] - ant.pos[0], cam.pos[1] - ant.pos[1], cam.pos[2] - ant.pos[2])
     const mesmoLugar = !cam.grupo || ant.grupo === cam.grupo
     if (mesmoLugar && !saiuDoLivre.current && !cortePendente.current) {
       onPiscar?.(false)
-      c.smoothTime = 1.1
+      c.smoothTime = 1.1 + Math.min(1.3, dist / 30)
       c.setLookAt(px, py, pz, tx, ty, tz, true)
       virarDepois(1100)
       return limpar
@@ -236,12 +239,14 @@ interface PainelProps {
   recentrar?: { visivel: boolean; onClick: () => void }
   /** Botões extras no topo (ex.: som) */
   extras?: ReactNode
+  /** Esconde o cartão de baixo (ex.: durante o show de fogos) */
+  semCartao?: boolean
   /** Um botão da própria parada, embaixo da frase (ex.: acelerar o touro, grande final dos fogos) */
   acao?: ReactNode
 }
 
 /** Botões e legendas por cima da cena 3D dos passeios */
-export function PainelTour({ paradas, i, onIr, sobretitulo, livre, onLivre, onSair, painelLivre, extras, recentrar, acao }: PainelProps) {
+export function PainelTour({ paradas, i, onIr, sobretitulo, livre, onLivre, onSair, painelLivre, extras, recentrar, acao, semCartao }: PainelProps) {
   const parada = paradas[i]
   const ir = (d: number) => onIr((i + d + paradas.length) % paradas.length)
 
@@ -255,7 +260,7 @@ export function PainelTour({ paradas, i, onIr, sobretitulo, livre, onLivre, onSa
     }
     window.addEventListener('keydown', tecla)
     return () => window.removeEventListener('keydown', tecla)
-  }, [i, livre, onIr, onSair, paradas.length])
+  }, [i, livre, semCartao, onIr, onSair, paradas.length])
 
   const botao = 'rounded-full bg-papel/80 shadow-suave ring-1 ring-dourado/25 backdrop-blur-md active:scale-[0.97]'
 
@@ -285,6 +290,16 @@ export function PainelTour({ paradas, i, onIr, sobretitulo, livre, onLivre, onSa
               className="pointer-events-auto mx-auto max-w-md rounded-[26px] bg-papel/85 p-4 text-center shadow-suave ring-1 ring-dourado/25 backdrop-blur-xl"
             >
               {painelLivre}
+            </motion.div>
+          ) : semCartao ? (
+            // (cartão escondido: só duas setinhas discretas nos cantos, pra passar ou voltar quando quiser)
+            <motion.div key="setas" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ delay: 1.5, duration: 1 }} className="flex justify-between">
+              <button onClick={() => ir(-1)} className="pointer-events-auto grid size-11 place-items-center rounded-full bg-white/12 text-white/80 ring-1 ring-white/25 backdrop-blur-md active:scale-[0.95]" aria-label="Anterior">
+                <SetaEsquerda className="size-5" />
+              </button>
+              <button onClick={() => ir(1)} className="pointer-events-auto grid size-11 place-items-center rounded-full bg-white/12 text-white/80 ring-1 ring-white/25 backdrop-blur-md active:scale-[0.95]" aria-label="Próximo">
+                <SetaDireita className="size-5" />
+              </button>
             </motion.div>
           ) : (
             <motion.div

@@ -13,7 +13,7 @@ export const PASSEIO_CASAMENTO = [
   { id: 'lounge', nome: 'Lounge e bar', frase: 'Pra conversar até a última estrela aparecer.' },
   { id: 'pier', nome: 'O píer', frase: 'No fim do píer, só nós dois e o pôr do sol.' },
   { id: 'pordosol', nome: 'O pôr do sol', frase: 'E o céu inteiro como testemunha.' },
-  { id: 'fogos', nome: 'Quando a noite cair', frase: 'O céu é todo nosso. Toque nele.' },
+  { id: 'fogos', nome: 'Quando a noite cair', frase: 'E o céu inteiro só pra nós dois.' },
 ] as const
 
 export type ParadaCasamento = (typeof PASSEIO_CASAMENTO)[number]['id']
