@@ -207,3 +207,39 @@
     animation: none;
   }
 }
+
+/* Ateliê: a régua (trilho fininho dourado, bolinha de pérola) */
+.regua-atelie {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 28px;
+  background: transparent;
+  touch-action: pan-y;
+}
+.regua-atelie::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 99px;
+  background: linear-gradient(90deg, rgb(201 168 106 / 0.75), rgb(201 168 106 / 0.25));
+}
+.regua-atelie::-moz-range-track {
+  height: 4px;
+  border-radius: 99px;
+  background: linear-gradient(90deg, rgb(201 168 106 / 0.75), rgb(201 168 106 / 0.25));
+}
+.regua-atelie::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 24px;
+  height: 24px;
+  margin-top: -10px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff, #f3ece2 65%, #e6dccd);
+  box-shadow: 0 2px 6px rgb(46 42 38 / 0.25), 0 0 0 1px rgb(201 168 106 / 0.5);
+}
+.regua-atelie::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff, #f3ece2 65%, #e6dccd);
+  box-shadow: 0 2px 6px rgb(46 42 38 / 0.25), 0 0 0 1px rgb(201 168 106 / 0.5);
+}

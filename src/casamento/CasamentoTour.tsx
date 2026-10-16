@@ -1,7 +1,7 @@
 import { Preload } from '@react-three/drei'
 import { Canvas } from '@react-three/fiber'
 import { AnimatePresence, motion } from 'framer-motion'
-import { useCallback, useEffect, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
 import { Carregando } from '../components/Carregando'
 import { CLASSE_CANVAS, Desempenho, dprInicial, ehCelular, GL_LEVE, LimiteFps, MedidorDebug, SombraCongelada, Vinheta } from '../lib/leve'
 import { CameraTour, PainelTour, type CamTour } from '../components/Tour'
@@ -12,12 +12,16 @@ import { CenaCasamento, type Qualidade } from './CenaCasamento'
 import { CartinhaCafe } from '../components/CartinhaCafe'
 import { irPara } from '../hooks/useRota'
 import { jaDesbloqueado } from '../lib/desbloqueios'
+import { useQuemSou } from '../lib/quemSou'
 import { SinoCapela } from './Capela'
 import { RevelacaoCafe } from './RevelacaoCafe'
 import { Fogos } from './Fogos'
-import { Lanternas } from './Lanternas'
 import { RelogioNoite } from './noite'
 import { NIVEIS, TouroMecanico } from './TouroMecanico'
+import { VestidoBorrado } from './VestidoBorrado'
+
+// o Ateliê da noiva só carrega quando ela toca no vestido do píer
+const Atelie = lazy(() => import('../atelie/Atelie'))
 
 // Onde a câmera fica e pra onde olha em cada parada (o mar e o sol ficam pro lado -z)
 const CAMERAS: Record<ParadaCasamento, CamTour> = {
@@ -33,8 +37,8 @@ const CAMERAS: Record<ParadaCasamento, CamTour> = {
   noivos: { pos: [21.3, 2.2, 1.6], alvo: [26.2, 0.95, -0.6] },
   touro: { pos: [9.4, 3.8, 14.4], alvo: [13.6, 1.25, 19.6] },
   lounge: { pos: [-6.2, 2.3, 7.2], alvo: [-12.8, 0.8, 0.2] },
-  // em cima do píer, olhando o gazebo lá no fim (o varal de luzinhas por cima)
-  // chega no píer e vai andando até dentro do gazebo, olhando o mar (as lanternas acendem ali)
+  // chega no píer olhando o gazebo lá no fim e vai andando até dentro dele, olhando o mar
+  // (o vestido borrado fica ali dentro, de lado, sem tampar a vista)
   pier: { pos: [-40, 2.4, -40], alvo: [-40, 2.7, -66], depois: { pos: [-40, 1.9, -63.2], alvo: [-40, 3.1, -90], espera: 2.2 }, recuoMax: 1 },
   pordosol: { pos: [-5, 5.5, 23], alvo: [7, 1.2, -22] },
   // na beira do mar, olhando o céu por cima da água (os fogos estouram lá, sobre a balsa)
@@ -96,9 +100,22 @@ export default function CasamentoTour({ onSair }: { onSair: () => void }) {
   // "piscar" suave entre lugares longe (a câmera não atravessa a praia deslizando)
   const [piscando, setPiscando] = useState(false)
   const piscar = useCallback((v: boolean) => setPiscando(v), [])
-  // o sino da capela e as lanternas do píer
+  // o sino da capela
   const [toquesSino, setToquesSino] = useState(0)
-  const [lanternas, setLanternas] = useState(0)
+  // o Ateliê da noiva (o vestido borrado do píer): só pra ela; pra ele, um recadinho
+  const eu = useQuemSou()
+  // (só no computador, rodando local: ?atelie no endereço abre direto, pra testar)
+  const [atelie, setAtelie] = useState(() => import.meta.env.DEV && new URLSearchParams(window.location.search).has('atelie'))
+  const [soDaNoiva, setSoDaNoiva] = useState(false)
+  const abrirAtelie = useCallback(() => {
+    if (eu === 'ele') setSoDaNoiva(true)
+    else setAtelie(true)
+  }, [eu])
+  useEffect(() => {
+    if (!soDaNoiva) return
+    const id = window.setTimeout(() => setSoDaNoiva(false), 4200)
+    return () => window.clearTimeout(id)
+  }, [soDaNoiva])
   // segredo 3 da lua de mel: a cartinha escondida no sino (cai na 1ª badalada forte)
   const [revelando, setRevelando] = useState(false)
   const [cartinhaCafe, setCartinhaCafe] = useState(false)
@@ -113,19 +130,13 @@ export default function CasamentoTour({ onSair }: { onSair: () => void }) {
   const parada = PASSEIO_CASAMENTO[i]
   const cam = CAMERAS[parada.id]
   const noFogos = !livre && parada.id === 'fogos'
-  // chegou no píer: umas lanternas sobem sozinhas (o botão solta mais)
-  useEffect(() => {
-    if (livre || parada.id !== 'pier') return
-    const t = window.setTimeout(() => setLanternas((n) => n + 1), 1800)
-    return () => window.clearTimeout(t)
-  }, [livre, parada.id])
   useEffect(() => {
     if (!noFogos) setShowAcabou(false)
   }, [noFogos])
   const dica = livre
     ? null
     : {
-        pier: '✋ segure pra acender a lanterna',
+        pier: '✨ toque no vestido',
         touro: '👆 toque no touro',
       }[parada.id as string] ?? null
 
@@ -143,8 +154,8 @@ export default function CasamentoTour({ onSair }: { onSair: () => void }) {
         {/* prepara todos os shaders já no carregamento (senão dá uma travadinha quando algo aparece pela 1ª vez) */}
         <Preload all />
         <MedidorDebug />
-        {/* com a cartinha aberta, o 3D para (a animação dela fica lisinha) */}
-        <LimiteFps ativo={!cartinhaCafe} />
+        {/* com a cartinha ou o ateliê abertos, o 3D daqui para (a animação deles fica lisinha) */}
+        <LimiteFps ativo={!cartinhaCafe && !atelie} />
         <Desempenho setDpr={setDpr} onPiorar={() => setQualidade('media')} />
         <CenaCasamento qualidade={qualidade} />
         <RelogioNoite alvo={noFogos ? 1 : 0} />
@@ -152,7 +163,7 @@ export default function CasamentoTour({ onSair }: { onSair: () => void }) {
         <Fogos ativo={noFogos} onFim={fimDoShow} />
         <SinoCapela toques={toquesSino} onTocar={() => setToquesSino((n) => n + 1)} gesto={!livre && parada.id === 'capela'} onBadalou={badalou} />
         {revelando && <RevelacaoCafe onChegou={() => setCartinhaCafe(true)} />}
-        <Lanternas soltar={lanternas} gesto={!livre && parada.id === 'pier'} noite={false} />
+        <VestidoBorrado onAbrir={abrirAtelie} />
         {/* entrada de cinema: vem lá do mar até o altar */}
         <CameraTour cam={cam} livre={livre} onPiscar={piscar} recentrar={recentrar} onFora={setFora} vistaLivre={VISTA_LIVRE} distancia={[2, 70]} area={AREA_LIVRE} chao={chaoDaPraia} entrada={[0, 9, -85]} duracaoEntrada={3.2} fovMax={80} recuoMax={1.4} />
       </Canvas>
@@ -187,7 +198,7 @@ export default function CasamentoTour({ onSair }: { onSair: () => void }) {
         semCartao={noFogos && !showAcabou}
         painelLivre={
           <>
-            <p className="font-serif text-lg text-grafite/75 italic">toque no touro, no sino da capela, no gazebo do píer e na pista ✨</p>
+            <p className="font-serif text-lg text-grafite/75 italic">toque no touro, no sino da capela, no vestido do píer e na pista ✨</p>
             <p className="mt-1 text-[11px] tracking-[0.18em] text-grafite/50 uppercase">um dedo gira · dois dedos andam e aproximam</p>
           </>
         }
@@ -203,6 +214,30 @@ export default function CasamentoTour({ onSair }: { onSair: () => void }) {
             }}
             onFechar={fecharCafe}
           />
+        )}
+      </AnimatePresence>
+      {/* ele tocou no vestido: esse cantinho é só dela */}
+      <AnimatePresence>
+        {soDaNoiva && (
+          <motion.button
+            onClick={() => setSoDaNoiva(false)}
+            initial={{ opacity: 0, y: 10, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 6 }}
+            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+            className="fixed inset-x-6 top-[30%] z-20 mx-auto max-w-sm rounded-[28px] bg-papel/95 px-6 py-6 text-center shadow-suave ring-1 ring-dourado/25"
+          >
+            <p className="sobretitulo">ateliê da noiva</p>
+            <p className="mt-2 font-serif text-[26px] leading-tight text-grafite italic">Esse cantinho é só da noiva 🤍</p>
+            <p className="mt-2 font-serif text-[17px] text-grafite/60">O vestido você só vai ver no grande dia.</p>
+          </motion.button>
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {atelie && (
+          <Suspense key="atelie" fallback={<Carregando texto="abrindo o ateliê…" />}>
+            <Atelie onFechar={() => setAtelie(false)} />
+          </Suspense>
         )}
       </AnimatePresence>
       <AnimatePresence>{!pronto && <Carregando texto="preparando o nosso casamento…" />}</AnimatePresence>
