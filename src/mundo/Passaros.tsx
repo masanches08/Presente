@@ -1,7 +1,8 @@
-import { useAnimations, useGLTF } from '@react-three/drei'
+import { useGLTF } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
-import { useEffect, useMemo, useRef } from 'react'
+import { useMemo, useRef } from 'react'
 import type { Group } from 'three'
+import { useBaterAsas } from './batida'
 
 // Pássaros que ficam voando em círculo lá no alto (as araras que vêm e vão estão em Revoada.tsx)
 // Modelos animados oficiais do three.js (licença MIT), em public/models/
@@ -31,13 +32,7 @@ function Passaro({ voo }: { voo: Voo }) {
   const { scene, animations } = useGLTF(MODELOS[voo.modelo])
   const copia = useMemo(() => scene.clone(true), [scene])
   const grupo = useRef<Group>(null)
-  const { actions, names } = useAnimations(animations, grupo)
-
-  useEffect(() => {
-    const a = actions[names[0]]
-    a?.reset().play()
-    if (a) a.timeScale = 0.9 + voo.fase * 0.05
-  }, [actions, names, voo.fase])
+  useBaterAsas(copia, animations, 0.95)
 
   useFrame(({ clock }) => {
     const g = grupo.current

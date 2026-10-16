@@ -163,7 +163,7 @@ export function PistaEncontrada({ onIr, onFechar }: { onIr: () => void; onFechar
       animate={{ opacity: 1 }}
       exit={{ opacity: 0, transition: { duration: 0.5 } }}
       transition={{ duration: 0.8 }}
-      className="fixed inset-0 z-[65] flex items-center justify-center overflow-hidden bg-[#1E1A16]/55 px-6 backdrop-blur-[5px] select-none"
+      className="fixed inset-0 z-[65] flex items-center justify-center overflow-hidden bg-[#1E1A16]/70 px-6 select-none"
       style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)', WebkitTouchCallout: 'none' }}
       onContextMenu={(e) => e.preventDefault()}
     >

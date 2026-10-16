@@ -36,7 +36,7 @@ export const ESCALAS: Record<string, number> = {
 }
 
 // tecidos: a trama vira um relevinho (não fica com cara de plástico)
-for (const t of ['linho', 'tecidoCreme', 'tecidoSalvia', 'tecidoTerracota', 'tecidoRosa', 'tecidoAzul', 'tecidoMostarda', 'tecidoMenta', 'tecidoAmarelo', 'tecidoLilas', 'tecidoCeu', 'tecidoPessego', 'cortina']) ESCALAS[t] = 0.27
+for (const t of ['linho', 'tecidoCreme', 'tecidoSalvia', 'tecidoTerracota', 'tecidoRosa', 'tecidoAzul', 'tecidoMostarda', 'tecidoMenta', 'tecidoAmarelo', 'tecidoLilas', 'tecidoCeu', 'tecidoPessego', 'tecidoMarinho', 'cortina']) ESCALAS[t] = 0.27
 
 const rep = (t: Texture) => {
   const c = t.clone()
@@ -78,9 +78,16 @@ export function criarMateriais() {
     // estrutura
     parede: reboco('#FBF6EE'),
     // quartos das crianças: cada um é uma cor que vai se misturando na outra
-    degradeCeu: degrade('#86CCD9', '#A6DCCF', '#DDF3E8'), // azul-céu que vira verde-menta
-    degradeSol: degrade('#FFB77A', '#FFD86E', '#FFF3C4'), // pêssego que vira amarelo-sol
-    degradeFlor: degrade('#F2A6C1', '#E4B4E0', '#DCCDF5'), // rosa que vira lilás
+    // (tons suaves, "empoeirados", como tinta de parede de verdade: combinam com a madeira clara e o branco da casa)
+    // tinta das meias-paredes e dos arcos dos quartos das crianças (cores de verdade, mas elegantes)
+    tintaCeu: reboco('#A2BBC7'), // azul-céu acinzentado
+    tintaSol: reboco('#E0BD74'), // amarelo-mostarda quentinho
+    tintaFlor: reboco('#E2C2C3'), // rosa antigo
+    tintaJeans: reboco('#7E97A7'), // azul-jeans (o quarto do menino maior)
+    tintaBranca: reboco('#F7F1E6'), // a parte de cima das paredes dos quartos (branco-creme da casa)
+    degradeCeu: degrade('#B9CDD2', '#CBDACF', '#F0F3EE'), // azul-céu que vira verde-menta
+    degradeSol: degrade('#E8CDB4', '#EDDDB8', '#F8F2E4'), // pêssego que vira amarelo-sol
+    degradeFlor: degrade('#E6CDCC', '#DDD1DA', '#F2EDEF'), // rosa que vira lilás
     fachada: std('#EDE7DD', { map: rep(texReboco()), roughness: 0.92 }),
     blocos: std('#FFFFFF', { map: rep(texBlocos()), roughness: 0.9 }),
     teto: reboco('#FBF8F3'),
@@ -118,14 +125,15 @@ export function criarMateriais() {
     tecidoCreme: tecido('#EDE3D1'),
     tecidoSalvia: tecido('#93A882'),
     tecidoTerracota: tecido('#C8643B'),
-    tecidoRosa: tecido('#EBA9B8'),
-    tecidoAzul: tecido('#7FB2D6'),
-    tecidoMostarda: tecido('#E3AE45'),
-    tecidoMenta: tecido('#9FD9C4'),
-    tecidoAmarelo: tecido('#FFD45C'),
-    tecidoLilas: tecido('#C9B2EE'),
-    tecidoCeu: tecido('#9CCFF0'),
-    tecidoPessego: tecido('#FFB98F'),
+    tecidoRosa: tecido('#E6BDB8'),
+    tecidoAzul: tecido('#93AFC2'),
+    tecidoMostarda: tecido('#D4A85A'),
+    tecidoMenta: tecido('#A9C3AF'),
+    tecidoAmarelo: tecido('#EDCF86'),
+    tecidoLilas: tecido('#C4B5D3'),
+    tecidoCeu: tecido('#B0C7D3'),
+    tecidoMarinho: tecido('#4F6378'),
+    tecidoPessego: tecido('#E6AE8B'),
     cortina: new MeshStandardMaterial({ color: '#F5EFE4', roughness: 1, ...relevo('poly_wool_herringbone', 0.6), side: DoubleSide, transparent: true, opacity: 0.9 }),
     juta: std('#E9D2A6', { map: rep(texJuta()), roughness: 1 }),
     feltro: std('#2E6E45', { roughness: 1 }),
@@ -136,12 +144,13 @@ export function criarMateriais() {
     livroB: std('#7E9A6C'),
     livroC: std('#E4D6BC'),
     livroD: std('#4F6D84'),
-    brinquedoA: std('#FFCB45', { roughness: 0.45 }),
-    brinquedoB: std('#FF7F5C', { roughness: 0.45 }),
-    brinquedoC: std('#56A8F0', { roughness: 0.45 }),
-    brinquedoD: std('#7BD389', { roughness: 0.45 }),
-    brinquedoE: std('#F38DC3', { roughness: 0.45 }),
-    brinquedoF: std('#B792F2', { roughness: 0.45 }),
+    // brinquedos de madeira pintada, em tons suaves (nada de plástico berrante)
+    brinquedoA: std('#E6B858', { roughness: 0.6 }),
+    brinquedoB: std('#D98A68', { roughness: 0.6 }),
+    brinquedoC: std('#7FA5BF', { roughness: 0.6 }),
+    brinquedoD: std('#93B287', { roughness: 0.6 }),
+    brinquedoE: std('#DB9AA6', { roughness: 0.6 }),
+    brinquedoF: std('#A998C9', { roughness: 0.6 }),
     madeiraBranca: std('#F4EFE6', { roughness: 0.6 }),
     tela: std('#101214', { roughness: 0.15, metalness: 0.4 }),
     luz: new MeshStandardMaterial({ color: '#FFF1D6', emissive: '#FFB45A', emissiveIntensity: 2.8 }),

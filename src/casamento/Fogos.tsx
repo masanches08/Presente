@@ -19,7 +19,7 @@ import { CLARAO as CLARAO_CENA, NOITE } from './noite'
 
 // Show de fogos sobre o mar (parada "Quando a noite cair"): acontece sozinho, coreografado, quando escurece.
 // Abre devagar com um salgueiro dourado, vai crescendo em ouro, rosa e champanhe, desenha um coração
-// e as nossas iniciais no céu, e termina num final dourado. Depois fica a noite calma, com um fogo de vez em quando.
+// e as nossas iniciais no céu, e termina num final dourado. Acabou, acabou: fica só a noite, a lua e as estrelas (sem fogo infinito).
 // Cada faísca é desenhada como um risco de luz na direção em que ela anda (mais comprido quanto mais rápida):
 // assim dá pra ver a dinâmica toda — o foguete subindo, o estouro abrindo, as faíscas fazendo a curva e caindo.
 // Tipos: peônia (que troca de cor), crisântemo (com rastro), salgueiro e kamuro (ouro caindo devagar),
@@ -80,6 +80,8 @@ interface Opcoes {
   troca?: number
   cor2?: Color
   divide?: number
+  /** no fim, a faísca estala (crackling) */
+  estala?: boolean
 }
 
 /** Pontos do coração e das iniciais (desenhados num canvas e "amostrados"), em metros, centrados em 0 */
@@ -234,6 +236,7 @@ export function Fogos({ ativo, onFim }: { ativo: boolean; onFim: () => void }) {
       cauda: new Float32Array(MAX),
       troca: new Float32Array(MAX),
       divide: new Float32Array(MAX),
+      estala: new Uint8Array(MAX),
       semente: new Float32Array(MAX),
       tipo: new Uint8Array(MAX),
       pisca: new Uint8Array(MAX),
@@ -317,6 +320,7 @@ export function Fogos({ ativo, onFim }: { ativo: boolean; onFim: () => void }) {
       s.cor2[j + 2] = o.cor2.b
     }
     s.divide[i] = o.divide ?? -1
+    s.estala[i] = o.estala ? 1 : 0
     s.semente[i] = Math.random()
     return i
   }
@@ -354,6 +358,7 @@ export function Fogos({ ativo, onFim }: { ativo: boolean; onFim: () => void }) {
           cauda: com ? 0.32 : 0,
           corCauda: OURO,
           troca: trocaCor ? sorteio(0.85, 1.05) : -1,
+          estala: com && Math.random() < 0.5,
           cor2,
         })
       }
@@ -368,7 +373,7 @@ export function Fogos({ ativo, onFim }: { ativo: boolean; onFim: () => void }) {
       const kam = tipo === 'kamuro'
       for (let k = 0; k < (kam ? 170 : 120); k++) {
         v.randomDirection().multiplyScalar(sorteio(kam ? 28 : 24, kam ? 32 : 28) * f)
-        soltar(FAISCA, p, v.x, v.y + 3, v.z, kam ? OURO_CLARO : OURO, { dur: sorteio(3.6, 4.6), tam: kam ? 0.95 : 0.8, rastro: 0.14, arrasto: 0.975, grav: 5.5, cauda: 0.26, corCauda: OURO, pisca: kam })
+        soltar(FAISCA, p, v.x, v.y + 3, v.z, kam ? OURO_CLARO : OURO, { dur: sorteio(3.6, 4.6), tam: kam ? 0.95 : 0.8, rastro: 0.14, arrasto: 0.975, grav: 5.5, cauda: 0.26, corCauda: OURO, pisca: kam, estala: kam && Math.random() < 0.35 })
       }
     } else if (tipo === 'palmeira') {
       // poucos cometas grossos subindo e caindo em arco, como folhas de palmeira
@@ -428,49 +433,43 @@ export function Fogos({ ativo, onFim }: { ativo: boolean; onFim: () => void }) {
   const pontoAleatorio = () => new Vector3(sorteio(-38, 38), sorteio(20, 36), Z_CEU)
 
 
-  /** O show inteiro, marcado no relógio a partir de agora (uns 40 s) */
+  /** O show inteiro, marcado no relógio a partir de agora (uns 20 s) */
   const show = () => {
     const t0 = s.relogio
     const em = (d: number, fazer: () => void) => s.fila.push({ quando: t0 + d, fazer })
     const P = (x: number, y: number) => new Vector3(x, y, Z_CEU)
-    // abertura: um salgueiro dourado sozinho, subindo devagar
-    em(0.4, () => lancar(P(0, 33), 'salgueiro', OURO, 0.95))
-    // dois rosas, um de cada lado
-    em(4.0, () => lancar(P(-24, 27), 'peonia', ROSA, 0.85))
-    em(4.7, () => lancar(P(24, 27), 'peonia', ROSA, 0.85))
-    // champanhe no alto, com rastro
-    em(7.2, () => lancar(P(0, 36), 'crisantemo', CHAMPANHE, 0.95))
-    // vai crescendo: rosa, ouro, lavanda, anel
+    // (uns 20 s no total)
+    // abertura: um salgueiro dourado, e logo dois rosas, um de cada lado
+    em(0.3, () => lancar(P(0, 33), 'salgueiro', OURO, 0.95))
+    em(1.6, () => lancar(P(-24, 27), 'peonia', ROSA, 0.85))
+    em(2.0, () => lancar(P(24, 27), 'peonia', ROSA, 0.85))
+    // vai crescendo: champanhe, rosa, ouro, lavanda, anel
     const meio: [number, number, Estouro, Color][] = [
+      [0, 36, 'crisantemo', CHAMPANHE],
       [-30, 24, 'peonia', ROSA_CLARO],
-      [18, 32, 'crisantemo', OURO],
-      [-8, 30, 'anel', ROSA],
+      [20, 32, 'crisantemo', OURO],
+      [-12, 30, 'anel', ROSA],
       [32, 25, 'peonia', LAVANDA],
-      [-20, 34, 'crossette', OURO],
-      [8, 26, 'peonia', ROSA_CLARO],
     ]
-    meio.forEach(([x, y, tipo, cor], k) => em(10 + k * 0.9, () => lancar(P(x, y), tipo, cor, 0.85)))
-    // três palmeiras douradas juntas
-    for (const x of [-26, 0, 26]) em(16.5 + Math.abs(x) * 0.01, () => lancar(P(x, 28), 'palmeira', OURO, 0.9))
-    // o coração (e dois anéis rosinha dos lados)
-    em(20.5, () => forma(P(0, 30), pontosDoCoracao(13), [corDe('#FF4F78'), corDe('#FF7A9A'), corDe('#FF3060')]))
-    for (const x of [-34, 34]) em(21, () => lancar(P(x, 25), 'anel', ROSA_CLARO, 0.75))
-    // as nossas iniciais, em dourado
-    em(24.5, () => {
+    meio.forEach(([x, y, tipo, cor], k) => em(3.2 + k * 0.45, () => lancar(P(x, y), tipo, cor, 0.85)))
+    // o coração (com dois anéis rosinha dos lados)
+    em(6.3, () => forma(P(0, 30), pontosDoCoracao(13), [corDe('#FF4F78'), corDe('#FF7A9A'), corDe('#FF3060')]))
+    for (const x of [-34, 34]) em(6.6, () => lancar(P(x, 25), 'anel', ROSA_CLARO, 0.75))
+    // as nossas iniciais, em dourado (depois que o coração desmancha)
+    em(10.6, () => {
       s.texto ??= pontosDoTexto()
       forma(P(0, 32.5), s.texto, [corDe('#FFD27A'), corDe('#FFE7A8'), corDe('#FFC45C')])
     })
-    // purpurina prateada dos lados enquanto as iniciais brilham
-    for (let k = 0; k < 4; k++) em(25.2 + k * 0.5, () => lancar(P((k % 2 ? 1 : -1) * sorteio(28, 40), sorteio(19, 26)), 'purpurina', CHAMPANHE, 0.6))
-    // o final: cascata dourada, uma salva subindo de ritmo e a coroa de ouro (kamuro)
-    em(29, () => {
-      s.fontes.push({ ate: s.relogio + 5, x0: -44, x1: 44, y: 40 })
+    for (let k = 0; k < 4; k++) em(11.1 + k * 0.4, () => lancar(P((k % 2 ? 1 : -1) * sorteio(28, 40), sorteio(19, 26)), 'purpurina', CHAMPANHE, 0.6))
+    // o final: cascata dourada, uma salva rápida e a coroa de ouro
+    em(14.4, () => {
+      s.fontes.push({ ate: s.relogio + 3, x0: -44, x1: 44, y: 40 })
       acender(OURO, 0.8)
     })
-    for (let k = 0; k < 14; k++) em(29.4 + k * (0.42 - k * 0.018), () => lancar(pontoAleatorio(), qualquer(['peonia', 'crisantemo', 'anel', 'purpurina'] as const), qualquer([ROSA, OURO, CHAMPANHE, ROSA_CLARO, LAVANDA]), 0.85))
-    for (let k = 0; k < 5; k++) em(35.2 + k * 0.1, () => lancar(P(-34 + k * 17, 35), 'kamuro', OURO_CLARO, 1))
-    em(36.4, () => lancar(P(0, 30), 'bombao', ROSA, 1.05))
-    em(41, () => onFim())
+    for (let k = 0; k < 9; k++) em(14.6 + k * 0.22, () => lancar(pontoAleatorio(), qualquer(['peonia', 'crisantemo', 'anel', 'purpurina'] as const), qualquer([ROSA, OURO, CHAMPANHE, ROSA_CLARO, LAVANDA]), 0.85))
+    for (let k = 0; k < 5; k++) em(16.6 + k * 0.08, () => lancar(P(-34 + k * 17, 35), 'kamuro', OURO_CLARO, 1))
+    em(17.4, () => lancar(P(0, 30), 'bombao', ROSA, 1.05))
+    em(21, () => onFim())
   }
 
   const p = useMemo(() => new Vector3(), [])
@@ -491,16 +490,10 @@ export function Fogos({ ativo, onFim }: { ativo: boolean; onFim: () => void }) {
     }
     if (balsa.current) balsa.current.visible = noite > 0.05
 
-    // escureceu: começa o show; acabado, só um fogo de vez em quando, bem calmo
-    if (ativo && noite > 0.8) {
-      if (!s.salvaInicial) {
-        s.salvaInicial = true
-        show()
-        s.proximoAuto = s.relogio + 46
-      } else if (s.relogio > s.proximoAuto && s.fila.length === 0) {
-        lancar(pontoAleatorio(), qualquer(['salgueiro', 'peonia', 'crisantemo'] as const), qualquer([ROSA, OURO, CHAMPANHE]), 0.8)
-        s.proximoAuto = s.relogio + sorteio(5, 8)
-      }
+    // escureceu: começa o show (uma vez só por visita à parada)
+    if (ativo && noite > 0.8 && !s.salvaInicial) {
+      s.salvaInicial = true
+      show()
     }
     if (!ativo) {
       s.salvaInicial = false
@@ -638,6 +631,15 @@ export function Fogos({ ativo, onFim }: { ativo: boolean; onFim: () => void }) {
         s.cor[j + 2] *= esfria * esfria
       }
       let a = k < 0.62 ? 1 : 1 - (k - 0.62) / 0.38
+      // estalinho: perto do fim a faísca vira um flash branquinho e some
+      if (s.estala[i] && k > 0.78) {
+        s.estala[i] = 0
+        p.set(s.pos[j], s.pos[j + 1], s.pos[j + 2])
+        for (let q = 0; q < 3; q++) soltar(FAISCA, p, sorteio(-3, 3), sorteio(-3, 3), sorteio(-3, 3), PRATA, { dur: 0.18, tam: 0.42, rastro: 0.03 })
+        s.tipo[i] = MORTA
+        s.alfa[i] = 0
+        continue
+      }
       if (s.pisca[i] && k > 0.45) a *= Math.sin(s.vida[i] * 31 + s.semente[i] * 50) > 0.1 ? 1.25 : 0.08
       if (tipo === CLARAO) a = (1 - k) * (s.tamBase[i] > 35 ? 0.16 : 0.85)
       s.alfa[i] = a

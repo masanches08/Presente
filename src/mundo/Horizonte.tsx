@@ -4,16 +4,18 @@ import {
   BoxGeometry,
   BufferGeometry,
   Color,
-  CylinderGeometry,
   ExtrudeGeometry,
   DoubleSide,
   Float32BufferAttribute,
   MeshBasicMaterial,
   MeshStandardMaterial,
+  Object3D,
   RingGeometry,
   Shape,
   SphereGeometry,
+  Vector3,
   type Group,
+  type InstancedMesh,
   type Mesh,
 } from 'three'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
@@ -114,80 +116,147 @@ function Veleiro({ rota }: { rota: Rota }) {
 
 // ---------------- golfinhos ----------------
 
+/** Raio do corpo ao longo do comprimento (z: -1 = cauda, +1.08 = ponta do bico), com uma curva suave */
+const PERFIL: [number, number][] = [
+  [-1.0, 0.045],
+  [-0.8, 0.075],
+  [-0.55, 0.13],
+  [-0.25, 0.22],
+  [0.05, 0.285],
+  [0.3, 0.29],
+  [0.52, 0.25],
+  [0.7, 0.2], // a testa redondinha (o "melão")
+  [0.8, 0.15],
+  [0.86, 0.085], // onde começa o bico
+  [0.98, 0.07],
+  [1.08, 0.035],
+]
+function raio(z: number) {
+  for (let i = 0; i < PERFIL.length - 1; i++) {
+    const [z0, r0] = PERFIL[i]
+    const [z1, r1] = PERFIL[i + 1]
+    if (z <= z1) {
+      const u = (z - z0) / (z1 - z0)
+      const e = u * u * (3 - 2 * u)
+      return r0 + (r1 - r0) * e
+    }
+  }
+  return PERFIL[PERFIL.length - 1][1]
+}
+
+const COR_COSTAS = new Color('#3E5466')
+const COR_FLANCO = new Color('#7F95A6')
+const COR_BARRIGA = new Color('#EEF3F6')
+
+/** Pinta uma peça inteira de uma cor (pra juntar com o corpo, que tem cor por vértice) */
+function pintar(g: BufferGeometry, cor: Color) {
+  const n = g.attributes.position.count
+  const c = new Float32Array(n * 3)
+  for (let i = 0; i < n; i++) c.set([cor.r, cor.g, cor.b], i * 3)
+  g.setAttribute('color', new Float32BufferAttribute(c, 3))
+  if (g.attributes.uv) g.deleteAttribute('uv')
+  return g
+}
+
+/** Peça achatada desenhada de perfil, com as bordas arredondadas */
+function peca(s: Shape, grossura: number) {
+  const g = new ExtrudeGeometry(s, { depth: grossura, bevelEnabled: true, bevelThickness: grossura * 0.45, bevelSize: grossura * 0.5, bevelSegments: 2, curveSegments: 10 })
+  g.translate(0, 0, -grossura / 2)
+  return g
+}
+
+/** O golfinho (de frente pra +z), sem a cauda: corpo moldado, barbatanas e os olhos */
 function geoGolfinho() {
-  const corpo = new SphereGeometry(1, 16, 10)
-  corpo.scale(0.3, 0.3, 1)
-  const p = corpo.attributes.position
-  for (let i = 0; i < p.count; i++) {
-    const z = p.getZ(i)
-    let f = 1
-    if (z < 0) f = Math.max(0.22, 1 + z * 0.7) // afina até o rabo
-    if (z > 0.55) f = 1 - (z - 0.55) * 1.1 // a cabeça arredondada
-    p.setXYZ(i, p.getX(i) * f, p.getY(i) * f, z)
+  // corpo: anéis ao longo do comprimento; as costas mais altas e redondas, a barriga mais reta,
+  // o pedúnculo (perto da cauda) achatado dos lados, e o bico um pouquinho mais baixo
+  const anel = 20
+  const fatias = 44
+  const pos: number[] = []
+  const cor: number[] = []
+  const idx: number[] = []
+  const c = new Color()
+  for (let i = 0; i <= fatias; i++) {
+    const z = -1 + (i / fatias) * 2.08
+    const r = raio(z)
+    const largura = z < -0.45 ? 0.62 + (z + 1) * 0.69 : 1
+    const desce = z > 0.82 ? -(z - 0.82) * 0.35 : 0
+    for (let j = 0; j <= anel; j++) {
+      const a = (j / anel) * Math.PI * 2
+      const sy = Math.sin(a)
+      const x = Math.cos(a) * r * largura * 0.92
+      const y = sy * r * (sy < 0 ? 0.82 : 1.04) + desce
+      pos.push(x, y, z)
+      // cores: costas escuras, flanco médio, barriga branca (com um degradê macio)
+      const h = sy
+      if (h > 0.25) c.copy(COR_FLANCO).lerp(COR_COSTAS, Math.min(1, (h - 0.25) / 0.45))
+      else c.copy(COR_BARRIGA).lerp(COR_FLANCO, Math.min(1, Math.max(0, (h + 0.35) / 0.6)))
+      // o bico um tiquinho mais claro embaixo, a cauda mais escura
+      if (z < -0.6) c.lerp(COR_COSTAS, 0.35)
+      cor.push(c.r, c.g, c.b)
+    }
   }
-  corpo.computeVertexNormals() // (antes de juntar as peças: assim o corpo fica lisinho)
+  for (let i = 0; i < fatias; i++)
+    for (let j = 0; j < anel; j++) {
+      const a0 = i * (anel + 1) + j
+      const a1 = a0 + anel + 1
+      idx.push(a0, a1, a0 + 1, a0 + 1, a1, a1 + 1)
+    }
+  const corpo = new BufferGeometry()
+  corpo.setAttribute('position', new Float32BufferAttribute(pos, 3))
+  corpo.setAttribute('color', new Float32BufferAttribute(cor, 3))
+  corpo.setIndex(idx)
+  corpo.computeVertexNormals()
 
-  // o bico curtinho
-  const bico = new CylinderGeometry(0.05, 0.075, 0.26, 10)
-  bico.rotateX(Math.PI / 2)
-  bico.translate(0, -0.05, 1.05)
-
-  // peças achatadas desenhadas de perfil (x = pra frente, y = pra cima) e viradas no lugar
-  const peca = (s: Shape, grossura: number) => {
-    const g = new ExtrudeGeometry(s, { depth: grossura, bevelEnabled: false, curveSegments: 6 })
-    g.translate(0, 0, -grossura / 2)
-    return g
-  }
-  // barbatana das costas: curvada pra trás
+  // barbatana das costas: alta e curvada pra trás (foice)
   const sDorsal = new Shape()
-  sDorsal.moveTo(0.16, 0)
-  sDorsal.quadraticCurveTo(0.02, 0.1, -0.16, 0.3)
-  sDorsal.quadraticCurveTo(-0.1, 0.12, -0.22, 0)
+  sDorsal.moveTo(0.22, 0)
+  sDorsal.bezierCurveTo(0.1, 0.12, 0.0, 0.26, -0.2, 0.36)
+  sDorsal.bezierCurveTo(-0.14, 0.2, -0.16, 0.08, -0.24, 0)
   sDorsal.closePath()
-  const dorsal = peca(sDorsal, 0.04)
+  const dorsal = peca(sDorsal, 0.025)
   dorsal.rotateY(-Math.PI / 2)
-  dorsal.translate(0, 0.24, -0.05)
+  dorsal.translate(0, 0.27, -0.12)
+  pintar(dorsal, COR_COSTAS)
 
-  // rabo: duas pontas, deitado (visto de cima: x = pro lado, y = pra frente)
-  const sRabo = new Shape()
-  sRabo.moveTo(0, 0.1)
-  sRabo.quadraticCurveTo(0.2, 0.02, 0.46, -0.2)
-  sRabo.quadraticCurveTo(0.24, -0.16, 0.1, -0.1)
-  sRabo.quadraticCurveTo(0.02, -0.12, 0, -0.17)
-  sRabo.quadraticCurveTo(-0.02, -0.12, -0.1, -0.1)
-  sRabo.quadraticCurveTo(-0.24, -0.16, -0.46, -0.2)
-  sRabo.quadraticCurveTo(-0.2, 0.02, 0, 0.1)
-  const rabo = peca(sRabo, 0.035)
-  rabo.rotateX(Math.PI / 2)
-  rabo.translate(0, 0, -0.98)
-
-  // nadadeiras do peito, uma de cada lado, pra baixo e pra trás
+  // nadadeiras do peito, curvas, pra baixo e pra trás
   const nadadeiras = [1, -1].map((l) => {
-    const s = new Shape()
-    s.moveTo(0, 0.07)
-    s.quadraticCurveTo(0.18 * l, 0.04, 0.3 * l, -0.12)
-    s.quadraticCurveTo(0.12 * l, -0.06, 0, -0.07)
-    s.closePath()
-    const g = peca(s, 0.025)
+    const sn = new Shape()
+    sn.moveTo(0, 0.06)
+    sn.bezierCurveTo(0.12 * l, 0.05, 0.24 * l, -0.04, 0.3 * l, -0.16)
+    sn.bezierCurveTo(0.18 * l, -0.1, 0.08 * l, -0.07, 0, -0.06)
+    sn.closePath()
+    const g = peca(sn, 0.018)
     g.rotateX(Math.PI / 2)
-    g.rotateZ(-0.6 * l)
-    g.translate(l * 0.2, -0.12, 0.38)
-    return g
+    g.rotateZ(-0.75 * l)
+    g.translate(l * 0.21, -0.14, 0.42)
+    return pintar(g, COR_FLANCO)
   })
 
-  const g = mergeGeometries([corpo, bico, dorsal, rabo, ...nadadeiras].map((x) => (x.index ? x.toNonIndexed() : x)))
-  // costas cinza-azuladas, barriga clarinha
-  const pos = g.attributes.position
-  const cores = new Float32Array(pos.count * 3)
-  const topo = new Color('#5F7586')
-  const barriga = new Color('#DCE4EA')
-  const c = new Color()
-  for (let i = 0; i < pos.count; i++) {
-    c.copy(barriga).lerp(topo, Math.min(1, Math.max(0, (pos.getY(i) + 0.08) * 4)))
-    cores.set([c.r, c.g, c.b], i * 3)
-  }
-  g.setAttribute('color', new Float32BufferAttribute(cores, 3))
-  return g
+  // os olhos
+  const olhos = [1, -1].map((l) => {
+    const g = new SphereGeometry(0.022, 8, 6)
+    g.translate(l * 0.165, 0.02, 0.74)
+    return pintar(g, new Color('#141A20'))
+  })
+
+  // (cada peça já tem o sombreamento dela: o corpo fica lisinho, sem recalcular depois de juntar)
+  for (const x of [dorsal, ...nadadeiras, ...olhos]) x.computeVertexNormals()
+  return mergeGeometries([corpo, dorsal, ...nadadeiras, ...olhos].map((x) => (x.index ? x.toNonIndexed() : x)))!
+}
+
+/** A cauda (as duas pontas, deitada), presa em z = 0 pra poder bater pra cima e pra baixo */
+function geoCauda() {
+  const sRabo = new Shape()
+  sRabo.moveTo(0, 0.05)
+  sRabo.bezierCurveTo(0.18, 0.04, 0.36, -0.06, 0.5, -0.24)
+  sRabo.bezierCurveTo(0.34, -0.2, 0.16, -0.16, 0.06, -0.15)
+  sRabo.quadraticCurveTo(0.02, -0.12, 0, -0.19)
+  sRabo.quadraticCurveTo(-0.02, -0.12, -0.06, -0.15)
+  sRabo.bezierCurveTo(-0.16, -0.16, -0.34, -0.2, -0.5, -0.24)
+  sRabo.bezierCurveTo(-0.36, -0.06, -0.18, 0.04, 0, 0.05)
+  const rabo = peca(sRabo, 0.022)
+  rabo.rotateX(Math.PI / 2)
+  return pintar(rabo, COR_COSTAS)
 }
 
 const GOLFINHOS = 3
@@ -198,12 +267,24 @@ const ATRASO = 0.32 // um vai um pouquinho depois do outro
 const PULO = 3.4 // distância de cada salto (m)
 const ALTURA_PULO = 1.4
 const SPLASH = 0.9
+const GOTAS_POR = 14
+const DEBUG = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('golfinhos')
+const frente = new Vector3()
+const GOTAS = GOLFINHOS * GOTAS_POR
 
 function Golfinhos() {
   const corpos = useRef<(Group | null)[]>([])
   const respingos = useRef<(Mesh | null)[]>([])
   const geo = useMemo(() => geoGolfinho(), [])
-  const mat = useMemo(() => new MeshStandardMaterial({ vertexColors: true, roughness: 0.3, metalness: 0.05 }), [])
+  const cauda = useMemo(() => geoCauda(), [])
+  const caudas = useRef<(Group | null)[]>([])
+  const gotas = useRef<InstancedMesh>(null)
+  const geoGota = useMemo(() => new SphereGeometry(0.045, 6, 4), [])
+  const matGota = useMemo(() => new MeshBasicMaterial({ color: '#F4FBFF' }), [])
+  // cada gotinha sai numa direção (sorteada uma vez)
+  const dirGotas = useMemo(() => Array.from({ length: GOTAS }, () => [Math.random() - 0.5, 1.6 + Math.random() * 2.2, Math.random() - 0.5] as [number, number, number]), [])
+  const o = useMemo(() => new Object3D(), [])
+  const mat = useMemo(() => new MeshStandardMaterial({ vertexColors: true, roughness: 0.22, metalness: 0.08 }), [])
   const matRespingo = useMemo(
     () => Array.from({ length: GOLFINHOS }, () => new MeshBasicMaterial({ color: '#FFFFFF', transparent: true, depthWrite: false, opacity: 0 })),
     [],
@@ -212,7 +293,7 @@ function Golfinhos() {
 
   const grupo = useRef({ inicio: sorteio([4, 8]), x: 60, z: 0, rumo: 0, n: 2 })
 
-  useFrame(({ clock }) => {
+  useFrame(({ clock, camera }) => {
     const t = clock.elapsedTime
     const g = grupo.current
     let tl = t - g.inicio
@@ -224,8 +305,21 @@ function Golfinhos() {
       g.z = sorteio([-28, 32])
       g.rumo = (Math.random() < 0.5 ? 0 : Math.PI) + sorteio([-0.6, 0.6]) // nadando ao longo da praia
       g.n = Math.random() < 0.4 ? 3 : 2
+      // (teste: com ?golfinhos no endereço, eles pulam logo ali na frente da câmera, de lado)
+      if (DEBUG) {
+        camera.getWorldDirection(frente)
+        g.inicio = t + 0.5
+        // começa à esquerda, pulando pra direita, passando pelo meio da tela
+        const dir = Math.atan2(frente.x, frente.z) - Math.PI / 2
+        g.x = camera.position.x + frente.x * 7 - Math.sin(dir) * 6
+        g.z = camera.position.z + frente.z * 7 - Math.cos(dir) * 6
+        g.rumo = dir
+        g.n = 3
+      }
       tl = t - g.inicio
     }
+    // (no teste fica na altura dos olhos da câmera; normal: no nível do mar)
+    const nivel = DEBUG ? camera.position.y - 2.2 : NIVEL_MAR
     const fx = Math.sin(g.rumo)
     const fz = Math.cos(g.rumo)
 
@@ -246,10 +340,14 @@ function Golfinhos() {
       d.visible = noAr
       if (noAr) {
         const s = j * (PULO + 2) + u * PULO
-        d.position.set(lx + fx * s, NIVEL_MAR - 0.35 + ALTURA_PULO * 4 * u * (1 - u), lz + fz * s)
+        d.position.set(lx + fx * s, nivel - 0.35 + ALTURA_PULO * 4 * u * (1 - u), lz + fz * s)
         const inclina = Math.atan2(ALTURA_PULO * 4 * (1 - 2 * u), PULO)
-        d.rotation.set(-inclina, g.rumo, 0, 'YXZ')
+        // um rolinho de lado no meio do pulo (golfinho brincando)
+        d.rotation.set(-inclina, g.rumo, Math.sin(u * Math.PI) * 0.25 * (k % 2 ? 1 : -1), 'YXZ')
       }
+      // a cauda batendo pra cima e pra baixo
+      const ca = caudas.current[k]
+      if (ca) ca.rotation.x = Math.sin(t * 9 + k) * 0.35
 
       // respingo: o último "pluft" (saindo ou entrando na água)
       let idade = Infinity
@@ -269,13 +367,28 @@ function Golfinhos() {
         }
       }
       const m = matRespingo[k]
+      const gm = gotas.current
       if (idade < SPLASH) {
         r.visible = true
-        r.position.set(lx + fx * onde, NIVEL_MAR + 0.03, lz + fz * onde)
+        r.position.set(lx + fx * onde, nivel + 0.03, lz + fz * onde)
         r.scale.setScalar(0.4 + idade * 2)
         m.opacity = (1 - idade / SPLASH) * 0.75
       } else r.visible = false
+      // as gotinhas: espirram pra cima e caem de volta na água
+      if (gm)
+        for (let q = 0; q < GOTAS_POR; q++) {
+          const gi = k * GOTAS_POR + q
+          const [dx, dy, dz] = dirGotas[gi]
+          const y = nivel + dy * idade - 4.9 * idade * idade
+          if (idade < SPLASH && y > nivel - 0.05) {
+            o.position.set(lx + fx * onde + dx * idade * 1.6, y, lz + fz * onde + dz * idade * 1.6)
+            o.scale.setScalar(1 - idade / SPLASH)
+          } else o.scale.setScalar(0)
+          o.updateMatrix()
+          gm.setMatrixAt(gi, o.matrix)
+        }
     }
+    if (gotas.current) gotas.current.instanceMatrix.needsUpdate = true
   })
 
   return (
@@ -284,10 +397,14 @@ function Golfinhos() {
         <group key={k}>
           <group ref={(el) => void (corpos.current[k] = el)} visible={false}>
             <mesh geometry={geo} material={mat} />
+            <group ref={(el) => void (caudas.current[k] = el)} position={[0, 0, -0.98]}>
+              <mesh geometry={cauda} material={mat} />
+            </group>
           </group>
           <mesh ref={(el) => void (respingos.current[k] = el)} geometry={anel} material={matRespingo[k]} visible={false} />
         </group>
       ))}
+      <instancedMesh ref={gotas} args={[geoGota, matGota, GOTAS]} frustumCulled={false} />
     </>
   )
 }

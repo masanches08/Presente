@@ -5,20 +5,15 @@ import {
   araraRoupas,
   banheira,
   banqueta,
-  bandeirinhas,
   brinquedos,
-  camaCasinha,
   cortina,
-  estanteInfantil,
   lareira,
   lustre,
   lustreNuvem,
   painelCabeceira,
-  type Desenho,
   type V3,
   cadeira,
   cama,
-  casinhaBoneca,
   chuveiro,
   criado,
   em,
@@ -36,9 +31,10 @@ import {
   pufe,
   sinuca,
   sofa,
-  tenda,
   tvRack,
   ursinho,
+  berco,
+  comodaTrocador,
   vasoSanitario,
   type Andar,
 } from './moveis'
@@ -271,27 +267,84 @@ export function decorarSuperior(a: Andar) {
   a.quadros.push({ pos: [3.93, y + 1.6, -7.0], w: 0.6, h: 0.8, giro: N_X, variante: 3 })
 
   // ---------- quartos das crianças ----------
-  // cada quarto tem 2 paredes pintadas em degradê (uma cor se misturando na outra) + desenhos na parede
+  // cada quarto: meia-parede pintada (até um pouco acima da cintura) com um frisinho de madeira branca em cima,
+  // o resto no branco da casa; móveis de quarto de verdade (cama com cabeceira, estante, quadros, poltrona…)
   const janela = (em: number): Abertura => ({ em, larg: 1.6, y0: 0.9, y1: 2.5, tipo: 'janela' })
-  const pintar = (mat: string, eixo: Eixo, fixo: number, de: number, ate: number, abs: Abertura[] = []) =>
-    parede(a.o, mat, eixo, fixo, de, ate, y + 0.12, Y2 - 0.1, 0.01, abs)
-  const desenho = (d: Desenho, pos: V3, w: number, h: number, giro: number) => a.quadros.push({ pos, w, h, giro, variante: 0, desenho: d })
+  const MEIA = 1.18
+  /** `lado`: pra que lado fica o quarto (+1/-1, no eixo perpendicular à parede) */
+  const pintar = (mat: string, eixo: Eixo, fixo: number, de: number, ate: number, lado: 1 | -1, abs: Abertura[] = []) => {
+    parede(a.o, mat, eixo, fixo, de, ate, y + 0.12, y + MEIA, 0.01, abs)
+    parede(a.o, 'tintaBranca', eixo, fixo, de, ate, y + MEIA, Y2 - 0.1, 0.01, abs)
+    // o friso de madeira (contornando a janela)
+    let c = de
+    const trechos: [number, number][] = []
+    for (const ab of [...abs].sort((p, q) => p.em - q.em)) {
+      trechos.push([c, ab.em - ab.larg / 2])
+      c = ab.em + ab.larg / 2
+    }
+    trechos.push([c, ate])
+    for (const [t0, t1] of trechos) {
+      if (t1 - t0 < 0.02) continue
+      const f0 = fixo + lado * 0.004
+      const f1 = fixo + lado * 0.035
+      const ff: [number, number] = f0 < f1 ? [f0, f1] : [f1, f0]
+      if (eixo === 'x') a.o.caixa('madeiraBranca', [t0, t1], [y + MEIA, y + MEIA + 0.05], ff)
+      else a.o.caixa('madeiraBranca', ff, [y + MEIA, y + MEIA + 0.05], [t0, t1])
+    }
+  }
+  /** Móbile de bebê pendurado no teto: argola de madeira, fios e pecinhas (estrelas, lua e nuvens de tecido) */
+  const mobile = (x: number, z: number, cores: string[]) => {
+    const l = em(a, [x, 0, z])
+    const topo = Y2 - 0.75
+    l.cil('linho', 0, topo, Y2, 0, 0.006, 0.006, 4)
+    l.aroDeitado('madeira', 0, topo, 0, 0.28, 0.012)
+    for (let k = 0; k < 6; k++) {
+      const ang = (k / 6) * Math.PI * 2
+      const px = Math.cos(ang) * 0.28
+      const pz = Math.sin(ang) * 0.28
+      const baixo = topo - 0.25 - (k % 3) * 0.12
+      l.cil('linho', px, baixo, topo, pz, 0.004, 0.004, 3)
+      const cor = cores[k % cores.length]
+      if (k % 3 === 0) l.esfera(cor, px, baixo - 0.05, pz, 0.06, 1.3, 0.85, 0.55) // nuvenzinha
+      else if (k % 3 === 1) l.esfera(cor, px, baixo - 0.05, pz, 0.05, 1, 1, 0.4) // lua/bolinha achatada
+      else l.cone(cor, px, baixo - 0.1, baixo, pz, 0.05, 5) // estrelinha (pontuda)
+    }
+  }
+  /** Um quadro emoldurado na parede */
+  const quadro = (pos: V3, w: number, h: number, giro: number, variante: number) => a.quadros.push({ pos, w, h, giro, variante })
 
-  // ---------- quarto do menino 1: azul-céu que vira verde-menta ----------
-  pintar('degradeCeu', 'x', -1.078, -8.99, -5.28)
-  pintar('degradeCeu', 'z', -8.994, -6.8, -1.08, [janela(-4.9)])
-  desenho('montanhas', [-7.25, y + 1.95, -1.084], 2.7, 1.6, N_Z)
-  desenho('balao', [-8.99, y + 1.95, -3.1], 1.2, 1.2, P_X)
-  desenho('foguete', [-8.99, y + 1.75, -6.2], 0.85, 0.85, P_X)
-  camaCasinha(em(a, [-7.95, y, -1.65], P_X), 1.0, 2.0, 'tecidoCeu', ['tecidoMenta', 'brinquedoA'])
-  escrivaninha(em(a, [-7.9, y, -6.45], P_Z), 1.2, 'tecidoMenta')
-  a.tapetes.push({ pos: [-7.1, y + 0.006, -3.9], w: 2.5, d: 2.5, giro: 0, tipo: 'infantil', cores: ['#8FD3E8', '#FFFFFF', '#A6DCCF', '#FFE08A', '#FFFFFF'] })
-  pufe(em(a, [-6.0, y, -2.4]), 'tecidoAmarelo')
-  estanteInfantil(em(a, [-5.45, y, -3.4], N_X), 1.6)
-  brinquedos(em(a, [-7.1, y, -4.1], 0.4))
-  ursinho(em(a, [-6.6, y, -3.4], -0.6))
-  lustreNuvem(em(a, [-7.1, 0, -3.9]), Y2 - 0.42, Y2)
-  bandeirinhas(a, [-8.95, y + 2.6, -5.8], [-5.35, y + 2.6, -1.15], ['brinquedoC', 'brinquedoA', 'brinquedoD', 'linho'])
+  // ---------- quarto do menino 1: quarto de menino de uns 14 anos (azul-jeans, marinho, computador, violão) ----------
+  pintar('tintaJeans', 'x', -1.078, -8.99, -5.28, -1)
+  pintar('tintaJeans', 'z', -8.994, -6.8, -1.08, 1, [janela(-4.9)])
+  quadro([-8.93, y + 1.75, -1.75], 0.6, 0.45, P_X, 1)
+  quadro([-7.25, y + 1.8, -1.14], 0.9, 0.65, N_Z, 0)
+  quadro([-8.93, y + 1.7, -6.2], 0.45, 0.6, P_X, 3)
+  cama(em(a, [-7.85, y, -1.75], P_X), 1.2, 2.0, 'tecidoMarinho', 'madeira', ['linho', 'tecidoAzul'])
+  // a escrivaninha com o computador (monitor, teclado e o fone pendurado)
+  escrivaninha(em(a, [-7.9, y, -6.45], P_Z), 1.2, 'tecidoMarinho')
+  const pc = em(a, [-7.75, y + 0.76, -6.6])
+  pc.caixa('preto', -0.06, 0.06, 0, 0.02, -0.08, 0.06)
+  pc.caixa('preto', -0.02, 0.02, 0.02, 0.2, -0.04, 0.0)
+  pc.caixa('preto', -0.33, 0.33, 0.16, 0.54, -0.03, 0.0)
+  pc.caixa('tela', -0.31, 0.31, 0.18, 0.52, 0.0, 0.004)
+  pc.caixa('preto', -0.24, 0.24, 0, 0.02, 0.2, 0.33)
+  pc.caixa('preto', 0.3, 0.37, 0, 0.012, 0.22, 0.32)
+  pc.aro('preto', -0.42, 0.12, 0.05, 0.09, 0.012)
+  // o violão no suporte, encostado na parede perto da cama
+  const vi = em(a, [-6.2, y, -1.35])
+  vi.caixa('preto', -0.12, 0.12, 0, 0.03, -0.1, 0.1)
+  vi.esfera('madeiraEscura', 0, 0.36, 0, 0.21, 1, 1.1, 0.4)
+  vi.esfera('madeiraEscura', 0, 0.62, 0, 0.16, 1, 1.0, 0.4)
+  vi.cil('preto', 0, 0.44, 0.47, 0.085, 0.055, 0.055, 16)
+  vi.caixa('madeira', -0.025, 0.025, 0.7, 1.22, 0.02, 0.07)
+  vi.caixa('preto', -0.04, 0.04, 1.22, 1.36, 0.02, 0.07)
+  // a bola de futevôlei no canto e o tapete de juta
+  em(a, [-5.75, y, -1.6]).esfera('branco', 0, 0.11, 0, 0.11)
+  em(a, [-5.75, y, -1.6]).aro('tecidoMostarda', 0, 0.11, 0, 0.111, 0.006)
+  a.tapetes.push({ pos: [-7.0, y + 0.006, -3.9], w: 2.6, d: 1.8, giro: PI / 2, tipo: 'juta' })
+  pufe(em(a, [-6.0, y, -2.9]), 'tecidoMarinho')
+  estante(em(a, [-5.45, y, -3.4], N_X), 1.4, 1.8, 0.32, 5)
+  pendente(em(a, [-7.1, Y2 - 0.75, -3.9]), 0, 0.75, 0.22)
   cortina(em(a, [-8.88, y, -4.9], P_X), -1.0, 0, 0.5, 0.05, 2.75)
   cortina(em(a, [-8.88, y, -4.9], P_X), 1.0, 0, 0.5, 0.05, 2.75)
   chuveiro(a, -X9, -7.95, -8.93, -7.95, 'x0', 'z0')
@@ -299,49 +352,62 @@ export function decorarSuperior(a: Andar) {
   gabinete(em(a, [-7.4, y, -7.12], N_Z), 0.8)
 
   // ---------- quarto do menino 2: pêssego que vira amarelo-sol ----------
-  pintar('degradeSol', 'x', -0.922, -8.99, -5.28)
-  pintar('degradeSol', 'z', -8.994, -0.92, 4.8, [janela(1.5)])
-  desenho('sol', [-8.99, y + 2.05, 3.65], 1.3, 1.3, P_X)
-  desenho('nuvem', [-8.99, y + 2.3, -0.3], 0.8, 0.8, P_X)
-  camaCasinha(em(a, [-7.95, y, 3.65], P_X), 1.0, 2.0, 'tecidoAmarelo', ['tecidoPessego', 'tecidoCeu'])
-  tenda(em(a, [-6.0, y, 0.15]))
+  pintar('tintaSol', 'x', -0.922, -8.99, -5.28, 1)
+  pintar('tintaSol', 'z', -8.994, -0.92, 4.8, 1, [janela(1.5)])
+  quadro([-8.93, y + 1.75, 3.65], 0.7, 0.5, P_X, 2)
+  quadro([-7.4, y + 1.8, -0.86], 0.8, 0.6, P_Z, 0)
+  cama(em(a, [-7.95, y, 3.65], P_X), 1.0, 2.0, 'tecidoAmarelo', 'madeira', ['tecidoPessego', 'linho'])
+  ursinho(em(a, [-8.55, y + 0.52, 4.05], P_X))
+  // a mesinha de criança com duas cadeirinhas, e brinquedos no tapete
+  const mesinha = em(a, [-6.45, y, 2.45])
+  mesinha.cil('madeiraBranca', 0, 0.42, 0.46, 0, 0.36, 0.36, 28)
+  for (const [px, pz] of [[0.22, 0.22], [-0.22, 0.22], [0.22, -0.22], [-0.22, -0.22]]) mesinha.cil('madeira', px, 0, 0.42, pz, 0.025, 0.025, 8)
+  mesinha.caixa('brinquedoC', -0.12, 0.0, 0.46, 0.5, -0.06, 0.06)
+  mesinha.caixa('brinquedoA', 0.05, 0.15, 0.46, 0.49, 0.0, 0.14)
+  for (const [dz, cor] of [[-0.55, 'tecidoMenta'], [0.55, 'tecidoPessego']] as [number, string][]) {
+    const cad = em(a, [-6.45, y, 2.45 + dz])
+    cad.caixa('madeiraBranca', -0.15, 0.15, 0.24, 0.27, -0.15, 0.15)
+    for (const [px, pz] of [[0.12, 0.12], [-0.12, 0.12], [0.12, -0.12], [-0.12, -0.12]]) cad.cil('madeira', px, 0, 0.24, pz, 0.02, 0.02, 6)
+    const enc = Math.sign(dz)
+    cad.caixa('madeiraBranca', -0.15, 0.15, 0.27, 0.55, enc * 0.13, enc * 0.15)
+    cad.caixa(cor, -0.13, 0.13, 0.27, 0.3, -0.13, 0.13)
+  }
+  brinquedos(em(a, [-7.4, y, 1.4], 0.8))
+  // o cantinho de leitura: poltrona e luminária
+  poltrona(em(a, [-6.1, y, 0.35], -0.6), 'linho', 'tecidoAmarelo')
+  luminariaPe(em(a, [-5.6, y, -0.35]))
   const bau = em(a, [-6.1, y, 4.35], N_Z)
   bau.caixa('madeiraBranca', -0.4, 0.4, 0, 0.45, -0.22, 0.22)
   brinquedos(em(a, [-6.4, y + 0.45, 4.35], PI))
   escrivaninha(em(a, [-5.9, y, 6.72], N_Z), 1.0, 'tecidoAmarelo')
-  a.tapetes.push({ pos: [-7.1, y + 0.006, 1.9], w: 2.5, d: 2.5, giro: 0, tipo: 'infantil', cores: ['#FFD86E', '#FFFFFF', '#FFB77A', '#9FD9C4', '#FFF3C4'] })
-  estanteInfantil(em(a, [-5.45, y, 2.5], N_X), 1.2)
+  a.tapetes.push({ pos: [-7.1, y + 0.006, 1.9], w: 2.5, d: 2.5, giro: 0, tipo: 'infantil', cores: ['#E2AE4A', '#F6F2EA', '#E6AE8B', '#A9C3AF', '#F3E2B8'] })
+  estante(em(a, [-5.45, y, 2.5], N_X), 1.2, 1.8, 0.32, 5)
   pufe(em(a, [-7.3, y, 1.1]), 'tecidoCeu')
   lustreNuvem(em(a, [-7.1, 0, 1.9]), Y2 - 0.42, Y2)
-  bandeirinhas(a, [-8.95, y + 2.6, -0.97], [-5.35, y + 2.45, 2.2], ['brinquedoA', 'brinquedoB', 'linho', 'brinquedoD'])
   cortina(em(a, [-8.88, y, 1.5], P_X), -1.0, 0, 0.5, 0.05, 2.75)
   cortina(em(a, [-8.88, y, 1.5], P_X), 1.0, 0, 0.5, 0.05, 2.75)
   chuveiro(a, -X9, -7.95, 5.95, 6.98, 'x0', 'z1')
   vasoSanitario(em(a, [-8.62, y, 5.3], P_X))
   gabinete(em(a, [-7.4, y, 5.12], P_Z), 0.8)
 
-  // ---------- quarto da menina: rosa que vira lilás ----------
-  pintar('degradeFlor', 'x', -1.078, 5.28, 8.99)
-  pintar('degradeFlor', 'z', 8.994, -6.8, -1.08, [janela(-4.9)])
-  desenho('lua', [6.55, y + 1.95, -1.084], 1.5, 1.5, N_Z)
-  desenho('estrelas', [8.99, y + 2.15, -2.65], 1.7, 1.1, N_X)
-  desenho('borboletas', [8.99, y + 1.85, -6.25], 0.8, 0.8, N_X)
-  cama(em(a, [8.0, y, -2.6], N_X), 1.1, 2.0, 'tecidoRosa', 'madeiraBranca', ['tecidoLilas', 'linho', 'tecidoRosa'])
-  const dossel = em(a, [8.55, y, -2.6])
-  dossel.cil('voil', 0, 1.2, 2.55, 0, 0.85, 0.12, 20, true)
-  dossel.aro('latao', 0, 2.55, 0, 0.12, 0.015)
-  ursinho(em(a, [8.45, y + 0.62, -2.35], N_X))
+  // ---------- quarto da menina: quarto de bebê (berço, trocador, poltrona de amamentar), rosinha ----------
+  pintar('tintaFlor', 'x', -1.078, 5.28, 8.99, -1)
+  pintar('tintaFlor', 'z', 8.994, -6.8, -1.08, -1, [janela(-4.9)])
+  quadro([8.93, y + 1.75, -2.6], 0.7, 0.5, N_X, 2)
+  quadro([6.55, y + 1.8, -1.14], 0.8, 0.6, N_Z, 1)
+  quadro([8.93, y + 1.7, -6.25], 0.45, 0.6, N_X, 3)
+  berco(em(a, [8.55, y, -2.6]), 'tecidoRosa', 'tecidoLilas')
+  ursinho(em(a, [8.55, y + 0.42, -2.25], PI))
   criado(em(a, [8.7, y, -1.5], N_X))
-  casinhaBoneca(em(a, [5.75, y, -1.5], P_X))
-  escrivaninha(em(a, [7.8, y, -6.45], P_Z), 1.1, 'tecidoLilas')
-  const esp = em(a, [7.8, y, -6.72])
-  esp.disco('espelho', 0, 1.55, 0.01, 0.32, 0.015)
-  esp.aro('latao', 0, 1.55, 0.02, 0.33, 0.02)
-  a.tapetes.push({ pos: [7.0, y + 0.006, -3.9], w: 2.5, d: 2.5, giro: 0, tipo: 'infantil', cores: ['#F2A6C1', '#FFFFFF', '#DCCDF5', '#FFE3EC', '#FFFFFF'] })
-  pufe(em(a, [6.1, y, -4.9]), 'tecidoLilas')
-  estanteInfantil(em(a, [5.45, y, -3.35], P_X), 1.2)
+  // a poltrona de amamentar, com o banquinho pros pés
+  poltrona(em(a, [6.0, y, -1.75], P_X + 0.5), 'linho', 'tecidoRosa')
+  pufe(em(a, [6.75, y, -2.35]), 'tecidoLilas')
+  comodaTrocador(em(a, [7.8, y, -6.5], P_Z), 1.1, 'tecidoRosa')
+  ursinho(em(a, [7.35, y + 0.86, -6.55], P_Z))
+  a.tapetes.push({ pos: [7.0, y + 0.006, -3.9], w: 2.5, d: 2.5, giro: 0, tipo: 'infantil', cores: ['#E8C4C6', '#F8F3EC', '#DCCDE4', '#F4E2E0', '#F8F3EC'] })
+  estante(em(a, [5.45, y, -3.35], P_X), 1.2, 1.8, 0.32, 5)
   lustreNuvem(em(a, [7.0, 0, -3.9]), Y2 - 0.42, Y2)
-  bandeirinhas(a, [5.35, y + 2.6, -5.8], [8.95, y + 2.6, -1.15], ['brinquedoE', 'linho', 'brinquedoF', 'brinquedoA'])
+  mobile(8.55, -2.6, ['branco', 'tecidoRosa', 'tecidoLilas'])
   cortina(em(a, [8.88, y, -4.9], N_X), -1.0, 0, 0.5, 0.05, 2.75)
   cortina(em(a, [8.88, y, -4.9], N_X), 1.0, 0, 0.5, 0.05, 2.75)
   chuveiro(a, 7.95, X9, -8.93, -7.95, 'x1', 'z0')

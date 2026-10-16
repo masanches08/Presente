@@ -79,7 +79,8 @@ export function TvSuite({ ligada, carregar, oculto }: Props) {
   }, [pecas])
   // a tela não recebe luz nenhuma: brilha sozinha, com as cores do vídeo
   const tela = useMemo(() => new MeshBasicMaterial({ map: capa(), toneMapped: false }), [])
-  useEffect(() => ocultar({ ...mats, tela }, oculto), [mats, tela, oculto])
+  // (a moldura também se chama "tela" nos materiais da casa: a do vídeo vai com outro nome, senão a moldura ficava de fora)
+  useEffect(() => ocultar({ ...mats, telaVideo: tela }, oculto), [mats, tela, oculto])
 
   // o vídeo só nasce quando o tour chega perto (ninguém baixa 13 MB sem ir até a suíte)
   const [video, setVideo] = useState<HTMLVideoElement | null>(null)

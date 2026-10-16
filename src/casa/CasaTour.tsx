@@ -62,7 +62,8 @@ export default function CasaTour({ onSair }: { onSair: () => void }) {
         {/* prepara todos os shaders já no carregamento (senão dá uma travadinha quando algo aparece pela 1ª vez) */}
         <Preload all />
         <MedidorDebug />
-        <LimiteFps />
+        {/* com a cartinha aberta, o 3D para (a animação dela fica lisinha) */}
+        <LimiteFps ativo={!cartinha} />
         <Desempenho setDpr={setDpr} onPiorar={() => setQualidade('media')} />
         <CenaCasa ocultos={ocultos} qualidade={qualidade} foco={cam.alvo} amplo={livre} luzes={livre ? [] : (cam.luzes ?? [])} />
         <CameraTour cam={cam} livre={livre} recentrar={recentrar} onFora={setFora} vistaLivre={VISTA_LIVRE} distancia={[2, 85]} area={AREA_LIVRE} onPiscar={piscar} fovMax={84} recuoMax={1.3} />

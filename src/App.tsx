@@ -64,7 +64,7 @@ export default function App() {
   return (
     <>
       <Suspense fallback={null}>
-        <Mundo foco={foco} onFocar={focar} onPista={() => setPista(true)} nossoDia={nossoDia || celebracao?.tipo === 'aniversario'} pausado={!!Pagina || naCasa || noCasamento || naLuaDeMel} onPronto={() => setPronto(true)} recentrar={recentrar} onFora={setFora} />
+        <Mundo foco={foco} onFocar={focar} onPista={() => setPista(true)} nossoDia={nossoDia || celebracao?.tipo === 'aniversario'} pausado={!!Pagina || naCasa || noCasamento || naLuaDeMel || pista} onPronto={() => setPronto(true)} recentrar={recentrar} onFora={setFora} />
       </Suspense>
 
       <Marcadores foco={foco} visivel={liberado && !Pagina} onFocar={focar} />

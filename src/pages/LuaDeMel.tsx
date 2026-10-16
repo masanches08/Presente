@@ -13,6 +13,17 @@ function Cadeado({ className = '' }: { className?: string }) {
   )
 }
 
+/** O cadeado aberto (a alça solta pro lado) */
+function CadeadoAberto({ className = '' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
+      <rect x="5" y="10.5" width="14" height="10" rx="2.2" />
+      <path d="M8 10.5V7.5a4 4 0 0 1 7.6-1.7" />
+      <circle cx="12" cy="15.3" r="1.2" fill="currentColor" />
+    </svg>
+  )
+}
+
 type Estado = 'bloqueado' | 'quebrando' | 'aberto'
 
 /** O ícone de cada segredo já aberto (o desenho combina com o que ele revela) */
@@ -27,6 +38,15 @@ function IconeSegredo({ id, className = '' }: { id: string; className?: string }
           <path d="M12 11V9.2" />
           <path d="M10.2 8.4h3.6" />
           <path d="M7.6 15.4a4.6 4.6 0 0 1 2.6-2.8" />
+        </>
+      ) : id === 'cafe' ? (
+        // a bandeja do café flutuando na água da piscina
+        <>
+          <path d="M3 17.5c2 1.2 4 1.2 6 0s4-1.2 6 0 4 1.2 6 0" />
+          <path d="M5 14.5h14l-1.5 2h-11z" />
+          <path d="M9 14.5v-2.2a1.4 1.4 0 0 1 2.8 0v2.2" />
+          <path d="M14.5 13.2c0-1.1.9-2 2-2" />
+          <path d="M8 8.5c.6-.8.6-1.6 0-2.4M11 8.5c.6-.8.6-1.6 0-2.4" />
         </>
       ) : (
         // solzinho nascendo atrás da montanha (o Monte Batur)
@@ -132,7 +152,7 @@ function SegredoAberto({ s, achados, onFechar }: { s: Segredo; achados: number; 
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       onClick={onFechar}
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-[#0E1A24]/55 px-7 backdrop-blur-md"
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-[#0E1A24]/65 px-7"
     >
       <motion.div
         initial={{ scale: 0.85, y: 20, opacity: 0 }}
@@ -202,6 +222,9 @@ export default function LuaDeMel({ onSair }: { onSair: () => void }) {
     return () => window.clearTimeout(t)
   }, [paraAbrir])
 
+  // os 3 achados (e já mostrados): a página muda — cadeado aberto, cenário dourado e "o resto, com o tempo"
+  const completo = SEGREDOS.every((s) => achados.includes(s.id) && revelados.includes(s.id)) && !quebrando && !paraAbrir
+
   const estado = (s: Segredo): Estado => (quebrando === s.id ? 'quebrando' : achados.includes(s.id) && revelados.includes(s.id) ? 'aberto' : 'bloqueado')
 
   return (
@@ -214,34 +237,84 @@ export default function LuaDeMel({ onSair }: { onSair: () => void }) {
       style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
       {/* fundo: as casinhas sobre o mar (uma foto do cenário 3D, desfocada: leve e igualzinha) */}
-      <img src={`${import.meta.env.BASE_URL}luademel/fundo.webp`} alt="" aria-hidden className="absolute inset-0 size-full scale-110 object-cover blur-2xl" />
-      <div className="absolute inset-0 bg-[#0E1A24]/45" />
+      <motion.img
+        src={`${import.meta.env.BASE_URL}luademel/fundo.webp`}
+        alt=""
+        aria-hidden
+        className="absolute inset-0 size-full object-cover"
+        initial={false}
+        animate={completo ? { scale: 1.04, filter: 'blur(6px) saturate(1.25)' } : { scale: 1.1, filter: 'blur(40px) saturate(1)' }}
+        transition={{ duration: 2.4, ease: 'easeInOut' }}
+      />
+      <div className="absolute inset-0 bg-[#0E1A24]/45 transition-opacity duration-[2400ms]" style={{ opacity: completo ? 0 : 1 }} />
+      {/* depois dos 3: o fim de tarde em Bali — dourado em cima, rosado embaixo, com brilhinhos subindo devagar */}
+      <div
+        className="pointer-events-none absolute inset-0 transition-opacity duration-[2400ms]"
+        style={{ opacity: completo ? 1 : 0, background: 'linear-gradient(180deg, rgb(255 196 120 / 0.42), rgb(232 120 110 / 0.22) 55%, rgb(40 20 50 / 0.55))' }}
+      />
+      {completo && (
+        <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
+          {Array.from({ length: 22 }, (_, k) => (
+            <motion.span
+              key={k}
+              className="absolute size-1.5 rounded-full bg-[#FFE6A8]"
+              style={{ left: `${(k * 37) % 100}%`, bottom: -10, boxShadow: '0 0 10px 2px rgb(255 220 150 / 0.7)' }}
+              animate={{ y: [0, -900], opacity: [0, 1, 1, 0], x: [0, (k % 2 ? 1 : -1) * 30] }}
+              transition={{ duration: 9 + (k % 5) * 1.6, repeat: Infinity, delay: (k * 0.7) % 8, ease: 'linear' }}
+            />
+          ))}
+        </div>
+      )}
 
       <div className="relative flex h-full flex-col items-center justify-center px-8 text-center">
+        <AnimatePresence mode="wait">
+          {completo ? (
+            <motion.div key="completo" className="flex flex-col items-center" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1.2, delay: 0.4 }}>
+              <motion.div
+                className="grid size-24 place-items-center rounded-full bg-white/15 ring-1 ring-[#F3DFA8]/60"
+                animate={{ boxShadow: ['0 0 0 0 rgb(243 223 168 / 0.45)', '0 0 0 22px rgb(243 223 168 / 0)'] }}
+                transition={{ duration: 2.6, repeat: Infinity, ease: 'easeOut' }}
+              >
+                <CadeadoAberto className="size-11 text-[#FFF1C9]" />
+              </motion.div>
+              <p className="mt-6 text-[11px] tracking-[0.35em] text-white/80 uppercase">nossa lua de mel</p>
+              <h2 className="mt-3 font-serif text-[2.9rem] leading-none font-medium [text-shadow:0_2px_16px_rgb(60_20_10/0.35)]">Bali, nós dois</h2>
+              <p className="mt-5 max-w-xs font-serif text-xl leading-snug text-white/90 italic [text-shadow:0_1px_10px_rgb(60_20_10/0.4)]">
+                o resto da viagem… você vai descobrindo com o tempo ✨
+              </p>
+            </motion.div>
+          ) : (
+            <motion.div key="bloqueado" className="flex flex-col items-center" exit={{ opacity: 0, y: -10, transition: { duration: 0.8 } }}>
         <motion.div
-          initial={{ scale: 0.6, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ type: 'spring', stiffness: 140, damping: 14, delay: 0.3 }}
-          className="grid size-24 place-items-center rounded-full bg-white/10 ring-1 ring-white/30 backdrop-blur-md"
-        >
-          <Cadeado className="size-11 text-[#F3DFA8]" />
-        </motion.div>
-        <motion.h2 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6, duration: 0.8 }} className="mt-7 font-serif text-[3rem] leading-none font-medium">
-          Bloqueado
-        </motion.h2>
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1, duration: 0.8 }} className="mt-8">
-          <p className="text-[11px] tracking-[0.35em] text-white/65 uppercase">tempo de desbloqueio</p>
-          <p className="mt-2 font-serif text-[3.4rem] leading-none tracking-[0.2em] text-[#F3DFA8]">{TEMPO_DESBLOQUEIO}</p>
-        </motion.div>
+                initial={{ scale: 0.6, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ type: 'spring', stiffness: 140, damping: 14, delay: 0.3 }}
+                className="grid size-24 place-items-center rounded-full bg-white/10 ring-1 ring-white/30 backdrop-blur-md"
+              >
+                <Cadeado className="size-11 text-[#F3DFA8]" />
+              </motion.div>
+              <motion.h2 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6, duration: 0.8 }} className="mt-7 font-serif text-[3rem] leading-none font-medium">
+                Bloqueado
+              </motion.h2>
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1, duration: 0.8 }} className="mt-8">
+                <p className="text-[11px] tracking-[0.35em] text-white/65 uppercase">tempo de desbloqueio</p>
+                <p className="mt-2 font-serif text-[3.4rem] leading-none tracking-[0.2em] text-[#F3DFA8]">{TEMPO_DESBLOQUEIO}</p>
+              </motion.div>
+
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <div className="mt-10 grid w-full max-w-xs grid-cols-3 gap-3">
           {SEGREDOS.map((s, i) => (
             <CardSegredo key={s.id} s={s} i={i} estado={estado(s)} onAbrir={() => setAberto(s)} />
           ))}
         </div>
-        <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 2 }} className="mt-5 text-[11px] tracking-[0.35em] text-white/55 uppercase">
-          sem dicks
-        </motion.p>
+        {!completo && (
+          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 2 }} className="mt-5 text-[11px] tracking-[0.35em] text-white/55 uppercase">
+            sem dicks
+          </motion.p>
+        )}
 
         <motion.button
           initial={{ opacity: 0 }}

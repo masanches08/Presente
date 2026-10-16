@@ -9,7 +9,11 @@ import { PASSEIO_CASAMENTO, type ParadaCasamento } from '../data/casamento'
 import { area } from '../lib/cameraNoChao'
 import { alturaAreia, NIVEL_MAR } from './Ambiente'
 import { CenaCasamento, type Qualidade } from './CenaCasamento'
+import { CartinhaCafe } from '../components/CartinhaCafe'
+import { irPara } from '../hooks/useRota'
+import { jaDesbloqueado } from '../lib/desbloqueios'
 import { SinoCapela } from './Capela'
+import { RevelacaoCafe } from './RevelacaoCafe'
 import { Fogos } from './Fogos'
 import { Lanternas } from './Lanternas'
 import { RelogioNoite } from './noite'
@@ -95,6 +99,16 @@ export default function CasamentoTour({ onSair }: { onSair: () => void }) {
   // o sino da capela e as lanternas do píer
   const [toquesSino, setToquesSino] = useState(0)
   const [lanternas, setLanternas] = useState(0)
+  // segredo 3 da lua de mel: a cartinha escondida no sino (cai na 1ª badalada forte)
+  const [revelando, setRevelando] = useState(false)
+  const [cartinhaCafe, setCartinhaCafe] = useState(false)
+  const badalou = useCallback((forca: number) => {
+    if (forca >= 0.25 && !jaDesbloqueado('cafe')) setRevelando(true)
+  }, [])
+  const fecharCafe = () => {
+    setCartinhaCafe(false)
+    setRevelando(false)
+  }
 
   const parada = PASSEIO_CASAMENTO[i]
   const cam = CAMERAS[parada.id]
@@ -111,7 +125,6 @@ export default function CasamentoTour({ onSair }: { onSair: () => void }) {
   const dica = livre
     ? null
     : {
-        capela: '👆 puxe a corda do sino pra baixo',
         pier: '✋ segure pra acender a lanterna',
         touro: '👆 toque no touro',
       }[parada.id as string] ?? null
@@ -130,13 +143,15 @@ export default function CasamentoTour({ onSair }: { onSair: () => void }) {
         {/* prepara todos os shaders já no carregamento (senão dá uma travadinha quando algo aparece pela 1ª vez) */}
         <Preload all />
         <MedidorDebug />
-        <LimiteFps />
+        {/* com a cartinha aberta, o 3D para (a animação dela fica lisinha) */}
+        <LimiteFps ativo={!cartinhaCafe} />
         <Desempenho setDpr={setDpr} onPiorar={() => setQualidade('media')} />
         <CenaCasamento qualidade={qualidade} />
         <RelogioNoite alvo={noFogos ? 1 : 0} />
         <TouroMecanico nivel={nivelTouro} onTocar={acelerar} />
         <Fogos ativo={noFogos} onFim={fimDoShow} />
-        <SinoCapela toques={toquesSino} onTocar={() => setToquesSino((n) => n + 1)} gesto={!livre && parada.id === 'capela'} />
+        <SinoCapela toques={toquesSino} onTocar={() => setToquesSino((n) => n + 1)} gesto={!livre && parada.id === 'capela'} onBadalou={badalou} />
+        {revelando && <RevelacaoCafe onChegou={() => setCartinhaCafe(true)} />}
         <Lanternas soltar={lanternas} gesto={!livre && parada.id === 'pier'} noite={false} />
         {/* entrada de cinema: vem lá do mar até o altar */}
         <CameraTour cam={cam} livre={livre} onPiscar={piscar} recentrar={recentrar} onFora={setFora} vistaLivre={VISTA_LIVRE} distancia={[2, 70]} area={AREA_LIVRE} chao={chaoDaPraia} entrada={[0, 9, -85]} duracaoEntrada={3.2} fovMax={80} recuoMax={1.4} />
@@ -179,6 +194,17 @@ export default function CasamentoTour({ onSair }: { onSair: () => void }) {
       />
 
       {pronto && dica && <DicaFlutuante key={parada.id} texto={dica} />}
+      <AnimatePresence>
+        {cartinhaCafe && (
+          <CartinhaCafe
+            onIr={() => {
+              fecharCafe()
+              irPara('luademel')
+            }}
+            onFechar={fecharCafe}
+          />
+        )}
+      </AnimatePresence>
       <AnimatePresence>{!pronto && <Carregando texto="preparando o nosso casamento…" />}</AnimatePresence>
     </motion.div>
   )

@@ -6,7 +6,7 @@ import { alturaAreia } from './Ambiente'
 import { CAPELA } from './montar'
 
 // O sino do campanário da capela de vidro (a capela em si fica em montar.ts), com a corda pendurada.
-// Na parada da capela: arrastar o dedo pra baixo PUXA a corda (o sino vai inclinando junto) e soltar
+// Na parada da capela: arrastar o dedo pra baixo PUXA a corda (a corda balança e a borla brilha, chamando o dedo) (o sino vai inclinando junto) e soltar
 // faz o sino badalar — quanto mais forte o puxão, mais ele balança e mais pétalas caem.
 // Na visão livre: tocar no sino também faz ele badalar.
 // As pétalas caem rodopiando em volta da porta e dentro da capela, e ficam um tempinho no chão.
@@ -21,9 +21,11 @@ interface Props {
   onTocar: () => void
   /** A parada da capela está na tela: o dedo puxa a corda */
   gesto: boolean
+  /** Avisa cada badalada (com a força dela) — é o que solta a cartinha escondida no sino */
+  onBadalou?: (forca: number) => void
 }
 
-export function SinoCapela({ toques, onTocar, gesto }: Props) {
+export function SinoCapela({ toques, onTocar, gesto, onBadalou }: Props) {
   const { gl, size } = useThree()
   const y0 = alturaAreia(CAPELA.x, CAPELA.z) + 0.38
   // onde o sino fica pendurado (na travessa do campanário, na frente do oitão)
@@ -31,6 +33,7 @@ export function SinoCapela({ toques, onTocar, gesto }: Props) {
   const sino = useRef<Group>(null)
   const corda = useRef<Mesh>(null)
   const borla = useRef<Group>(null)
+  const cordaGrupo = useRef<Group>(null)
   const petalas = useRef<InstancedMesh>(null)
   const balanco = useRef({ x: 0, v: 0 })
   // quanto a corda está puxada (0..1) e a "mola" dela quando solta
@@ -50,7 +53,8 @@ export function SinoCapela({ toques, onTocar, gesto }: Props) {
   const geoCorda = useMemo(() => new CylinderGeometry(0.03, 0.03, CORDA, 8).translate(0, -CORDA / 2, 0), [])
   const bronze = useMemo(() => new MeshStandardMaterial({ color: '#C9A24A', metalness: 0.85, roughness: 0.3 }), [])
   const matCorda = useMemo(() => new MeshStandardMaterial({ color: '#E8D2B0', roughness: 0.9 }), [])
-  const matBorla = useMemo(() => new MeshStandardMaterial({ color: '#B8432C', roughness: 0.8 }), [])
+  // a borla brilha de levinho, chamando o dedo (sem precisar de aviso nenhum)
+  const matBorla = useMemo(() => new MeshStandardMaterial({ color: '#B8432C', roughness: 0.8, emissive: '#FFB347', emissiveIntensity: 0.3 }), [])
   // pétala de rosa: arredondada em cima, afinando embaixo (e meio curvinha)
   const geoPetala = useMemo(() => {
     const f = new Shape()
@@ -95,6 +99,7 @@ export function SinoCapela({ toques, onTocar, gesto }: Props) {
 
   /** O sino badala com uma força (0..1): balança e solta pétalas (mais força, mais pétalas) */
   const badalar = (forca: number) => {
+    onBadalou?.(forca)
     balanco.current.v += 2 + 4.5 * forca
     const n = Math.round(N * (0.3 + 0.7 * forca))
     for (let k = 0; k < n; k++) {
@@ -154,6 +159,7 @@ export function SinoCapela({ toques, onTocar, gesto }: Props) {
     const dt = Math.min(0.05, dtBruto)
     // a corda: segue o dedo enquanto puxa; solta, volta pra cima dando uns pulinhos
     const pz = puxa.current
+    const b0 = balanco.current.x
     if (pz.segurando) {
       pz.x += (pz.alvo - pz.x) * Math.min(1, dt * 18)
       pz.v = 0
@@ -161,6 +167,9 @@ export function SinoCapela({ toques, onTocar, gesto }: Props) {
       pz.v += (-90 * pz.x - 7 * pz.v) * dt
       pz.x += pz.v * dt
     }
+    // parada, a corda fica balançando de leve e a borla pisca dourada: dá vontade de puxar
+    if (cordaGrupo.current) cordaGrupo.current.rotation.z = pz.segurando ? 0 : Math.sin(clock.elapsedTime * 1.4) * 0.035 + b0 * 0.15
+    matBorla.emissiveIntensity = 0.25 + 0.35 * (0.5 + 0.5 * Math.sin(clock.elapsedTime * 2.6))
     const estica = 1 + Math.max(-0.05, pz.x) * 0.35
     if (corda.current) corda.current.scale.y = estica
     if (borla.current) borla.current.position.y = -CORDA * estica
@@ -225,7 +234,7 @@ export function SinoCapela({ toques, onTocar, gesto }: Props) {
         </mesh>
       </group>
       {/* a corda do sino, descendo na frente da porta, com a borla vermelha na ponta */}
-      <group position={[pivo[0] + 0.08, pivo[1] - 0.45, pivo[2] + 0.16]}>
+      <group ref={cordaGrupo} position={[pivo[0] + 0.08, pivo[1] - 0.45, pivo[2] + 0.16]}>
         <mesh ref={corda} geometry={geoCorda} material={matCorda} />
         <group ref={borla} position-y={-CORDA}>
           <mesh material={matBorla} position-y={-0.08}>

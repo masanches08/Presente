@@ -26,7 +26,12 @@ export const SEGREDOS: Segredo[] = [
     frase: 'Um vilarejo balinês de luxo na beira do rio Ayung, entre arrozais e a selva. O único hotel de Bali com 3 Chaves Michelin. Vila com piscina só nossa e jantar dentro de um casulo de bambu, ouvindo o rio.',
     onde: 'cartinha escondida na estante do mezanino (2º andar da casa), 2ª prateleira de cima, entre o 2º e o 3º grupo de livros (src/casa/CartinhaEstante.tsx). Ela segura o selo de cera até ele quebrar (src/components/CartinhaHotel.tsx)',
   },
-  { id: 'segredo3', nome: '???', frase: '', onde: 'ainda não decidido' },
+  {
+    id: 'cafe',
+    nome: 'Café da manhã flutuante',
+    frase: 'Na piscina da nossa villa, só nossa: o café da manhã chega flutuando numa bandeja na água. Frutas, sucos e a selva em volta, sem ninguém por perto.',
+    onde: 'cartinha que cai do sino da capela de vidro, no casamento: é só puxar a corda do sino (src/casamento/Capela.tsx). Ela abre em src/components/CartinhaCafe.tsx',
+  },
 ]
 
 /**
@@ -67,4 +72,15 @@ export const CARTA_ARARA = {
   lugar: 'Kintamani · Bali',
   texto: SEGREDOS[0].frase,
   destaques: ['trilha de madrugada até o topo do vulcão', 'o sol nascendo em cima das nuvens', 'café da manhã lá em cima, só nós dois'],
+}
+
+/**
+ * O que aparece na carta do café (segredo 3), quando ela cai do sino da capela.
+ */
+export const CARTA_CAFE = {
+  chamada: 'só nós dois, na água',
+  nome: 'Café da manhã flutuante',
+  lugar: 'na piscina da nossa villa · Bali',
+  texto: SEGREDOS[2].frase,
+  destaques: ['a bandeja chega flutuando na nossa piscina', 'frutas tropicais, sucos e café balinês', 'a villa só nossa, com a selva em volta'],
 }

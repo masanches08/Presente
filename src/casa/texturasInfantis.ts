@@ -243,6 +243,16 @@ export const texDesenho = (tipo: string) =>
     (ctx, rand) => {
       ctx.clearRect(0, 0, 512, 512)
       DESENHOS[tipo]?.(ctx, rand)
+      // suaviza as cores (menos saturadas, um pouco mais claras): parece pintado à mão, aguado
+      const img = ctx.getImageData(0, 0, 512, 512)
+      const d = img.data
+      for (let i = 0; i < d.length; i += 4) {
+        if (!d[i + 3]) continue
+        const cinza = d[i] * 0.3 + d[i + 1] * 0.59 + d[i + 2] * 0.11
+        for (let k = 0; k < 3; k++) d[i + k] = (d[i + k] * 0.78 + cinza * 0.22) * 0.94 + 236 * 0.06
+        d[i + 3] *= 0.88
+      }
+      ctx.putImageData(img, 0, 0)
     },
     false,
   )

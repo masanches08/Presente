@@ -1,6 +1,7 @@
-import { useAnimations, useCursor, useGLTF } from "@react-three/drei";
+import { useCursor, useGLTF } from "@react-three/drei";
+import { useBaterAsas } from "./batida";
 import { useFrame, type ThreeEvent } from "@react-three/fiber";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   AdditiveBlending,
   CanvasTexture,
@@ -257,7 +258,7 @@ function Passaro({
   const copia = useMemo(() => scene.clone(true), [scene]);
   const grupo = useRef<Group>(null);
   const modelo = useRef<Group>(null);
-  const { actions, names } = useAnimations(animations, modelo);
+  useBaterAsas(copia, animations);
   const [comCartinha, setComCartinha] = useState(false);
   const [sobre, setSobre] = useState(false);
   useCursor(sobre && comCartinha);
@@ -278,12 +279,6 @@ function Passaro({
     () => new URLSearchParams(window.location.search).has("debug"),
     [],
   );
-
-  useEffect(() => {
-    const a = actions[names[0]];
-    a?.reset().play();
-    if (a) a.timeScale = 0.8 + Math.random() * 0.3;
-  }, [actions, names]);
 
   useFrame(({ clock, camera, size }) => {
     const g = grupo.current;

@@ -646,3 +646,56 @@ export function lareira(l: L, larg = 2.4, alt = 2.9) {
   l.cil('vela', -w + 0.42, 1.2, 1.34, 0.12, 0.05)
   l.cil('ceramica', w - 0.3, 1.2, 1.45, 0.12, 0.07, 0.05, 16)
 }
+
+/** Berço de bebê (comprido em z): madeira branca com grades, colchãozinho, protetor acolchoado, mantinha e travesseirinho */
+export function berco(l: L, edredom = 'tecidoRosa', protetor = 'linho') {
+  const w = 0.36 // meia largura
+  const c = 0.66 // meio comprimento
+  const alto = 0.98
+  const fundo = 0.32 // altura do estrado
+  // os quatro pés/colunas, com a bolinha em cima
+  for (const x of [-w, w])
+    for (const z of [-c, c]) {
+      l.caixa('madeiraBranca', x - 0.03, x + 0.03, 0, alto, z - 0.03, z + 0.03)
+      l.esfera('madeiraBranca', x, alto + 0.03, z, 0.035)
+    }
+  // cabeceira e pezeira: painéis inteiros com a borda de cima arredondadinha
+  for (const z of [-c, c]) {
+    l.caixa('madeiraBranca', -w, w, fundo, alto - 0.05, z - 0.015, z + 0.015)
+    l.cil('madeiraBranca', 0, alto - 0.07, alto - 0.03, z, w, w, 24)
+  }
+  // grades dos lados
+  for (const x of [-w, w]) {
+    l.caixa('madeiraBranca', x - 0.02, x + 0.02, alto - 0.06, alto - 0.02, -c, c)
+    l.caixa('madeiraBranca', x - 0.02, x + 0.02, fundo, fundo + 0.04, -c, c)
+    for (let z = -c + 0.08; z < c - 0.04; z += 0.085) l.caixa('madeiraBranca', x - 0.012, x + 0.012, fundo + 0.04, alto - 0.06, z - 0.012, z + 0.012)
+  }
+  // estrado + colchão
+  l.caixa('madeiraBranca', -w + 0.02, w - 0.02, fundo - 0.03, fundo, -c + 0.02, c - 0.02)
+  l.caixa('linho', -w + 0.03, w - 0.03, fundo, fundo + 0.1, -c + 0.03, c - 0.03)
+  // protetor acolchoado em volta (por dentro das grades)
+  for (const x of [-w + 0.05, w - 0.05]) l.caixa(protetor, x - 0.03, x + 0.03, fundo + 0.1, fundo + 0.34, -c + 0.05, c - 0.05)
+  for (const z of [-c + 0.05, c - 0.05]) l.caixa(protetor, -w + 0.05, w - 0.05, fundo + 0.1, fundo + 0.34, z - 0.03, z + 0.03)
+  // mantinha dobrada no pé e o travesseirinho na cabeceira
+  l.caixa(edredom, -w + 0.09, w - 0.09, fundo + 0.1, fundo + 0.14, 0.05, c - 0.1)
+  l.caixa(edredom, -w + 0.09, w - 0.09, fundo + 0.14, fundo + 0.17, c - 0.32, c - 0.1)
+  l.caixa('linho', -0.16, 0.16, fundo + 0.1, fundo + 0.16, -c + 0.1, -c + 0.3)
+}
+
+/** Cômoda branca com o trocador de bebê em cima (frente pra +z) */
+export function comodaTrocador(l: L, comp = 1.1, almofada = 'tecidoRosa') {
+  const w = comp / 2
+  const h = 0.86
+  l.caixa('madeiraBranca', -w, w, 0.08, h, -0.25, 0.25)
+  for (const x of [-w + 0.04, w - 0.04]) for (const z of [-0.21, 0.21]) l.caixa('madeiraBranca', x - 0.025, x + 0.025, 0, 0.08, z - 0.025, z + 0.025)
+  // três gavetas com puxadorzinho de latão
+  for (let k = 0; k < 3; k++) {
+    const y0 = 0.12 + k * 0.245
+    l.caixa('madeiraBranca', -w + 0.03, w - 0.03, y0, y0 + 0.22, 0.25, 0.265)
+    l.caixa('latao', -0.08, 0.08, y0 + 0.1, y0 + 0.125, 0.265, 0.285)
+  }
+  // o trocador: bordas acolchoadas e o colchonete
+  l.caixa(almofada, -w + 0.05, w - 0.05, h, h + 0.05, -0.23, 0.23)
+  for (const x of [-w + 0.07, w - 0.07]) l.caixa(almofada, x - 0.04, x + 0.04, h + 0.05, h + 0.14, -0.23, 0.23)
+  l.caixa(almofada, -w + 0.07, w - 0.07, h + 0.05, h + 0.12, -0.23, -0.17)
+}
